@@ -1,0 +1,22 @@
+partner toegestaan -> plus een
+kosten veldje loesoe
+eindtijd invullen.
+activiteiten over meerdere dagen.
+datums naar echt woorden. (10-1-1000 -> 10 jan 1000)
+sterretjes voor verplichte velden
+required melding naar nederlands forseren
+foutmelding naar het veld verplaatste
+pagina refreshed na submit dat is niet mooi (misschien livewire)
+status naar een checkbox, default=publish
+
+prioriteit voor volgende sprint:
+inloggen
+rollen
+aanmelden?
+
+styling:
+minder blokkig
+meer oranje
+logo
+meer modern
+
