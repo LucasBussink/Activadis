@@ -159,8 +159,8 @@ body {
         padding: 32px;
 
         .hero-anim-slot {
-          width: 160px;
-          height: 160px;
+          width: 500px;
+          /* height: 160px; */
         }
       }
     }

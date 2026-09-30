@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="login-visual">
       <div class="hero-anim-slot">
-        <img src="{{ asset('images/hero-placeholder.png') }}" alt="" id="hero-animation">
+        <img src="{{ asset('images/hero-animation.gif') }}" alt="" id="hero-animation">
       </div>
       <p class="login-visual-caption">Activadis</p>
     </div>
