@@ -27,6 +27,15 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Determine whether the user is the beheerder.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->is_admin;
     }
 }
