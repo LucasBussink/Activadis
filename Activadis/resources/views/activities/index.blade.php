@@ -6,7 +6,8 @@
   @else
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       @foreach ($activities as $activity)
-        <div class="flex flex-col rounded-lg border border-gray-200 bg-white p-6">
+        <a href="{{ route('activities.show', $activity) }}"
+          class="flex flex-col rounded-lg border border-gray-200 bg-white p-6 transition hover:border-brand-primary hover:shadow-sm">
           <div class="mb-3 flex items-start justify-between gap-2">
             <h2 class="text-base font-semibold text-brand-secondary">{{ $activity->title }}</h2>
             <span @class([
@@ -23,7 +24,7 @@
           <dl class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-md bg-brand-accent/60 p-3 text-sm">
             <div>
               <dt class="text-xs text-brand-secondary/70">Datum &amp; tijd</dt>
-              <dd class="font-semibold text-brand-secondary">{{ $activity->starts_at->format('d-m-Y H:i') }}</dd>
+              <dd class="font-semibold text-brand-secondary">{{ $activity->starts_at?->format('d-m-Y H:i') ?? '—' }}</dd>
             </div>
             <div>
               <dt class="text-xs text-brand-secondary/70">Inschrijven tot</dt>
@@ -66,7 +67,7 @@
               @endif
             </div>
           </div>
-        </div>
+        </a>
       @endforeach
     </div>
   @endif
