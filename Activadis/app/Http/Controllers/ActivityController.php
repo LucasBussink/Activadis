@@ -64,9 +64,11 @@ class ActivityController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Activity $activity): View
     {
-        //
+        return view('activities.show', [
+            'activity' => $activity,
+        ]);
     }
 
     /**
