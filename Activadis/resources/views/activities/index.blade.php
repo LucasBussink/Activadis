@@ -142,7 +142,7 @@
                         <span class="tag">Inclusief eten</span>
                       @endif
                       @if ($activity->allow_partner)
-                        <span class="tag">Partner toegestaan</span>
+                        <span class="tag">+1 toegestaan</span>
                       @endif
                       @if ($activity->is_external)
                         <span class="tag">Extern</span>
