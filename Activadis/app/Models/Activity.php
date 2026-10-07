@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\ActivityFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Signups;
 
 class Activity extends Model
 {
@@ -44,5 +45,38 @@ class Activity extends Model
             'allow_partner' => 'boolean',
             'is_external' => 'boolean',
         ];
+    }
+
+    public function signups()
+    {
+        return $this->hasMany(Signups::class);
+    }
+
+    public function addUser(User $user): Signups
+    {
+        return $this->signups()->create([
+            'user_id' => $user->id,
+            'activity_id' => $this->id,
+        ]);
+    }
+
+    public function removeUser(User $user): void
+    {
+        $this->signups()->where('user_id', $user->id)->delete();
+    }
+
+    public function isUserSignedUp(User $user): bool
+    {
+        return $this->signups()->where('user_id', $user->id)->exists();
+    }
+
+    public function getSignedUpUsers(): array
+    {
+        return $this->signups()->with('user')->get()->toArray();
+    }
+
+    public function getSignedUpUserCount(): int
+    {
+        return $this->signups()->count();
     }
 }
