@@ -3,12 +3,20 @@
 namespace Tests\Feature;
 
 use App\Models\Activity;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class StoreActivityTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->actingAs(User::factory()->admin()->create());
+    }
 
     /**
      * @return array<string, mixed>

@@ -12,9 +12,10 @@ class ActivityController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $activities = Activity::query()
+            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('status', Activity::STATUS_PUBLISHED))
             ->orderBy('signup_deadline')
             ->get();
 
@@ -64,8 +65,10 @@ class ActivityController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Activity $activity): View
+    public function show(Request $request, Activity $activity): View
     {
+        abort_if($activity->status === Activity::STATUS_DRAFT && ! $request->user()->isAdmin(), 404);
+
         return view('activities.show', [
             'activity' => $activity,
         ]);
