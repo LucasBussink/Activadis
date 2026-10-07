@@ -37,21 +37,47 @@ class ActivityController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Een "-" bij eigen bijdrage betekent: geen bijdrage (0). Een komma mag als decimaalteken.
+        $contribution = trim((string) $request->input('personal_contribution'));
+        if (in_array($contribution, ['-', '--', '—'], true)) {
+            $request->merge(['personal_contribution' => 0]);
+        } elseif ($contribution !== '') {
+            $request->merge(['personal_contribution' => str_replace(',', '.', $contribution)]);
+        }
+
+        // Een concept mag onvolledig zijn (lege velden worden als "—" getoond),
+        // maar bij publiceren moeten alle velden behalve omschrijving, eigen bijdrage en minimum ingevuld zijn.
+        $publish = $request->boolean('publish');
+        $required = $publish ? 'required' : 'nullable';
+        $foodRequired = $publish && $request->boolean('includes_food') ? 'required' : 'nullable';
+
+        // Alleen vergelijken met de begintijd / het minimum als die zelf geldig zijn,
+        // anders krijg je bij één fout ook een verwarrende fout op het andere veld.
+        $hasValidStart = $request->filled('starts_at') && strtotime((string) $request->input('starts_at')) !== false;
+        $hasValidMin = filter_var($request->input('min_participants'), FILTER_VALIDATE_INT) !== false;
+
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => [$required, 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'starts_at' => ['required', 'date'],
-            'signup_deadline' => ['nullable', 'date', 'before_or_equal:starts_at'],
-            'cost' => ['nullable', 'numeric', 'min:0'],
+            'starts_at' => [$required, 'date'],
+            'ends_at' => [$required, 'date', ...($hasValidStart ? ['after:starts_at'] : [])],
+            'signup_deadline' => [$required, 'date', ...($hasValidStart ? ['before_or_equal:starts_at'] : [])],
             'personal_contribution' => ['nullable', 'numeric', 'min:0'],
             'includes_food' => ['boolean'],
-            'food_description' => ['nullable', 'string'],
+            'food_description' => [$foodRequired, 'string'],
             'min_participants' => ['nullable', 'integer', 'min:0'],
-            'max_participants' => ['nullable', 'integer', 'gte:min_participants'],
+            'max_participants' => [$required, 'integer', 'min:0', ...($hasValidMin ? ['gte:min_participants'] : [])],
             'allow_partner' => ['boolean'],
             'is_external' => ['boolean'],
-            'status' => ['required', 'in:draft,published'],
+            'publish' => ['boolean'],
+        ], [
+            'required' => 'Vul een geldige waarde in.',
         ]);
+
+        unset($validated['publish']);
+        $validated['status'] = $request->boolean('publish')
+            ? Activity::STATUS_PUBLISHED
+            : Activity::STATUS_DRAFT;
 
         $validated['includes_food'] = $request->boolean('includes_food');
         $validated['allow_partner'] = $request->boolean('allow_partner');
