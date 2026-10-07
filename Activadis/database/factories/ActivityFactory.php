@@ -17,10 +17,13 @@ class ActivityFactory extends Factory
      */
     public function definition(): array
     {
+        $startsAt = fake()->dateTimeBetween('+1 week', '+3 months');
+
         return [
             'title' => fake()->sentence(4),
             'description' => fake()->paragraph(),
-            'starts_at' => fake()->dateTimeBetween('+1 week', '+3 months'),
+            'starts_at' => $startsAt,
+            'ends_at' => (clone $startsAt)->modify('+'.fake()->numberBetween(1, 48).' hours'),
             'signup_deadline' => fake()->dateTimeBetween('now', '+1 week'),
             'cost' => fake()->randomFloat(2, 0, 100),
             'personal_contribution' => fake()->randomFloat(2, 0, 25),
