@@ -82,7 +82,7 @@
                 }
 
                 $deadlineClosed = $deadline?->isPast();
-                $registered = $activity->registrations_count ?? 0;
+                $registered = $activity->getSignedUpUserCount() ?? 0;
                 $isFull = $activity->max_participants && $registered >= $activity->max_participants;
               @endphp
 
