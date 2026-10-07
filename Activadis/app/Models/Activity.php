@@ -55,8 +55,11 @@ class Activity extends Model
         return $this->hasMany(Signups::class);
     }
 
-    public function addUser(User $user): Signups
+    public function addUser(User $user): Signups|null
     {
+        if ($this->isUserSignedUp($user) || $this->getSignedUpUserCount() >= $this->max_participants)
+            return null;
+
         return $this->signups()->create([
             'user_id' => $user->id,
             'activity_id' => $this->id,
@@ -81,6 +84,8 @@ class Activity extends Model
     public function getSignedUpUserCount(): int
     {
         return $this->signups()->count();
+    }
+
     /**
      * Formatteer een datum in woorden, bijv. "10 jan 2026 14:00".
      */
@@ -109,6 +114,6 @@ class Activity extends Model
             ? $this->ends_at->format('H:i')
             : self::formatDate($this->ends_at);
 
-        return $start.' – '.$end;
+        return $start . ' – ' . $end;
     }
 }
