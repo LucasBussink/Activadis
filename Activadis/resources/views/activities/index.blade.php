@@ -1,74 +1,172 @@
+@push('styles')
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  @vite(['resources/css/pages/activities.css'])
+@endpush
+
 <x-app-layout>
-  <h1 class="mb-6 text-2xl font-semibold text-brand-secondary">Activiteiten</h1>
+  <div class="activities-page">
+    <header class="page-header">
+      <div>
+        <h1>Activiteiten</h1>
+                <p class="subtitle">
+          @if (auth()->user()?->isAdmin())
+            @php $conceptCount = $activities->where('status', 'draft')->count(); @endphp
+            {{ $activities->count() - $conceptCount }} gepubliceerd, {{ $conceptCount }} {{ $conceptCount === 1 ? 'concept' : 'concepten' }}
+          @else
+            {{ $activities->count() }} {{ $activities->count() === 1 ? 'activiteit' : 'activiteiten' }}
+          @endif
+        </p>
+      </div>
 
-  @if ($activities->isEmpty())
-    <p class="text-gray-500">Nog geen activiteiten.</p>
-  @else
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      @foreach ($activities as $activity)
-        <a href="{{ route('activities.show', $activity) }}"
-          class="flex flex-col rounded-lg border border-gray-200 bg-white p-6 transition hover:border-brand-primary hover:shadow-sm">
-          <div class="mb-3 flex items-start justify-between gap-2">
-            <h2 class="text-base font-semibold text-brand-secondary">{{ $activity->title }}</h2>
-            <span @class([
-                'inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
-                'bg-brand-accent text-brand-secondary' => $activity->status === 'draft',
-                'bg-brand-primary/10 text-brand-primary' =>
-                    $activity->status === 'published',
-            ])>
-              {{ $activity->status === 'draft' ? 'Concept' : 'Gepubliceerd' }}
-            </span>
-          </div>
-
-          {{-- Belangrijke info: praktische zaken die direct relevant zijn voor deelname --}}
-          <dl class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-md bg-brand-accent/60 p-3 text-sm">
-            <div>
-              <dt class="text-xs text-brand-secondary/70">Datum &amp; tijd</dt>
-              <dd class="font-semibold text-brand-secondary">{{ $activity->starts_at?->format('d-m-Y H:i') ?? '—' }}</dd>
-            </div>
-            <div>
-              <dt class="text-xs text-brand-secondary/70">Inschrijven tot</dt>
-              <dd class="font-semibold text-brand-secondary">
-                {{ $activity->signup_deadline?->format('d-m-Y H:i') ?? '—' }}</dd>
-            </div>
-            <div>
-              <dt class="text-xs text-brand-secondary/70">Kosten</dt>
-              <dd class="font-semibold text-brand-secondary">
-                {{ $activity->cost !== null ? '€ ' . number_format((float) $activity->cost, 2, ',', '.') : 'Gratis' }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-xs text-brand-secondary/70">Deelnemers</dt>
-              <dd class="font-semibold text-brand-secondary">
-                {{ $activity->min_participants ?? '—' }}–{{ $activity->max_participants ?? '—' }}</dd>
-            </div>
-          </dl>
-
-          {{-- Algemene info: aanvullende, minder cruciale details --}}
-          <div class="mt-4 space-y-3">
-            @if ($activity->description)
-              <p class="line-clamp-2 text-sm text-gray-500">{{ $activity->description }}</p>
-            @endif
-
-            <div class="flex flex-wrap gap-1.5">
-              @if ($activity->includes_food)
-                <span
-                  class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">Inclusief
-                  eten</span>
-              @endif
-              @if ($activity->allow_partner)
-                <span
-                  class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">Partner
-                  toegestaan</span>
-              @endif
-              @if ($activity->is_external)
-                <span
-                  class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">Extern</span>
-              @endif
-            </div>
-          </div>
+      @if (auth()->user()?->isAdmin())
+        <a href="{{ route('activities.create') }}" class="btn-primary">
+          <i class="bi bi-plus-lg"></i> Nieuwe activiteit
         </a>
+      @endif
+    </header>
+
+    @if (session('status'))
+      <p class="flash"><i class="bi bi-check-circle-fill"></i> {{ session('status') }}</p>
+    @endif
+
+    @if ($activities->isEmpty())
+      <div class="empty-state">
+        <i class="bi bi-calendar-x"></i>
+        <p>Nog geen activiteiten.</p>
+      </div>
+    @else
+            @php
+        $sections = [
+          'Gepubliceerd' => $activities->where('status', 'published')->sortBy('starts_at'),
+          'Concepten' => $activities->where('status', 'draft')->sortBy('starts_at'),
+        ];
+      @endphp
+
+      @foreach ($sections as $sectionTitle => $sectionActivities)
+        @continue($sectionActivities->isEmpty())
+
+        <section class="section">
+          @if (auth()->user()?->isAdmin())
+            <h2 class="section-title">
+              {{ $sectionTitle }}
+              <span class="count">{{ $sectionActivities->count() }}</span>
+            </h2>
+          @endif
+
+          <div class="cards">
+            @foreach ($sectionActivities as $activity)
+              @php
+                //* Datums in het Nederlands, op kopieen zodat het model niet wordt aangepast
+                $start = $activity->starts_at?->copy()->locale('nl');
+                //* ends_at staat (nog) niet in de casts van het model, dus eerst omzetten naar Carbon
+                $end = $activity->ends_at ? \Illuminate\Support\Carbon::parse($activity->ends_at)->locale('nl') : null;
+                $deadline = $activity->signup_deadline?->copy()->locale('nl');
+
+                $multiDay = $start && $end && !$start->isSameDay($end);
+                $days = $multiDay ? (int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1 : 1;
+
+                if (!$start) {
+                    $dateText = 'Datum volgt';
+                } elseif ($multiDay) {
+                    $dateText = ucfirst($start->isoFormat('ddd D MMM')) . ' t/m ' . $end->isoFormat('ddd D MMM');
+                } else {
+                    $dateText = ucfirst($start->isoFormat('dddd D MMMM'));
+                }
+
+                if (!$start) {
+                    $timeText = null;
+                } elseif ($multiDay) {
+                    $timeText = 'Vanaf ' . $start->format('H:i');
+                } else {
+                    $timeText = $start->format('H:i') . ($end ? ' - ' . $end->format('H:i') : '');
+                }
+
+                $deadlineClosed = $deadline?->isPast();
+                $registered = $activity->registrations_count ?? 0;
+                $isFull = $activity->max_participants && $registered >= $activity->max_participants;
+              @endphp
+
+              <a href="{{ route('activities.show', $activity) }}" class="card">
+                <div class="card-media">
+                  @if ($start)
+                    <div class="date-badge">
+                      <span class="day">{{ $start->format('j') }}</span>
+                      <span class="month">{{ rtrim($start->isoFormat('MMM'), '.') }}</span>
+                    </div>
+                  @else
+                    <div class="date-badge">
+                      <span class="day"><i class="bi bi-calendar"></i></span>
+                      <span class="month">Volgt</span>
+                    </div>
+                  @endif
+
+                  @if ($activity->status === 'draft')
+                    <span class="status-pill">Concept</span>
+                  @elseif ($isFull)
+                    <span class="status-pill full">Vol</span>
+                  @endif
+
+                  <i class="bi bi-calendar-event card-media-icon"></i>
+                </div>
+
+                <div class="card-body">
+                  <p class="card-date">{{ $dateText }}</p>
+
+                  <h2 class="card-title">{{ $activity->title ?? 'Naamloze activiteit' }}</h2>
+
+                  @if ($activity->description)
+                    <p class="card-description">{{ $activity->description }}</p>
+                  @endif
+
+                  <ul class="card-meta">
+                    @if ($timeText)
+                      <li><i class="bi bi-clock"></i> {{ $timeText }}</li>
+                    @endif
+                    <li>
+                      <i class="bi bi-tag"></i>
+                      {{ $activity->cost !== null && (float) $activity->cost > 0 ? '€ ' . number_format((float) $activity->cost, 2, ',', '.') : 'Gratis' }}
+                    </li>
+                    @if ($activity->max_participants)
+                      <li><i class="bi bi-people"></i> {{ $registered }}/{{ $activity->max_participants }} ingeschreven</li>
+                    @else
+                      <li><i class="bi bi-people"></i> {{ $registered }} ingeschreven</li>
+                    @endif
+                  </ul>
+
+                  @if ($multiDay || $activity->includes_food || $activity->allow_partner || $activity->is_external)
+                    <div class="card-tags">
+                      @if ($multiDay)
+                        <span class="tag days">{{ $days }} dagen</span>
+                      @endif
+                      @if ($activity->includes_food)
+                        <span class="tag">Inclusief eten</span>
+                      @endif
+                      @if ($activity->allow_partner)
+                        <span class="tag">Partner toegestaan</span>
+                      @endif
+                      @if ($activity->is_external)
+                        <span class="tag">Extern</span>
+                      @endif
+                    </div>
+                  @endif
+
+                  <div class="card-footer">
+                    @if ($deadline)
+                      <span class="deadline {{ $deadlineClosed ? 'closed' : '' }}">
+                        {{ $deadlineClosed ? 'Inschrijving gesloten' : 'Inschrijven tot ' . rtrim($deadline->isoFormat('D MMM'), '.') }}
+                      </span>
+                    @else
+                      <span class="deadline">Geen inschrijfdeadline</span>
+                    @endif
+
+                    <span class="card-cta">Bekijk <i class="bi bi-arrow-right"></i></span>
+                  </div>
+                </div>
+              </a>
+            @endforeach
+          </div>
+        </section>
       @endforeach
-    </div>
-  @endif
+    @endif
+  </div>
 </x-app-layout>
