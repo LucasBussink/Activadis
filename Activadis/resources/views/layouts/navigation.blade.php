@@ -20,6 +20,12 @@
                 Activiteit aanmaken
               </x-nav-link>
             @endif
+
+            @if (auth()->user()->is_admin)
+            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                Gebruikers
+            </x-nav-link>
+            @endif
           </div>
         @endauth
       </div>
