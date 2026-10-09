@@ -1,0 +1,208 @@
+@import url("../styles.css");
+
+body {
+  /* Hele pagina-opbouw (alles behalve de pagina-inhoud zelf) */
+  .app-shell {
+    min-height: 100vh;
+  }
+
+  /* Optionele kop onder de navigatie (via <x-slot name="header">) */
+  .page-heading {
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+
+    .page-heading-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+  }
+
+  /* Navigatiebalk */
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 2px 12px rgba(14, 30, 59, 0.04);
+
+    .site-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      max-width: 1200px;
+      height: 68px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--color-brand-secondary);
+
+      .brand-logo {
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    .nav-toggle {
+      display: none;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+
+      .nav-links {
+        display: flex;
+        gap: 4px;
+
+        .nav-link {
+          display: inline-flex;
+          align-items: center;
+          padding: 8px 16px;
+          border-radius: 100px;
+          font-size: 15px;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+          transition: color 0.15s, background-color 0.15s;
+
+          &:hover {
+            background-color: rgba(14, 30, 59, 0.05);
+            color: var(--color-brand-secondary);
+          }
+
+          &.active {
+            background-color: rgba(250, 162, 27, 0.15);
+            color: var(--color-accent-text);
+          }
+        }
+      }
+
+      .nav-user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .avatar {
+          display: grid;
+          place-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: var(--color-brand-secondary);
+          color: #fff;
+          font-size: 14px;
+          font-weight: 700;
+
+          &.is-admin {
+            background-color: var(--color-brand-primary);
+          }
+        }
+
+        .user-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--color-text);
+        }
+
+        .logout {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border: 1px solid var(--color-border);
+          border-radius: 100px;
+          background-color: var(--color-surface);
+          color: var(--color-text-secondary);
+          font-size: 14px;
+          font-weight: 600;
+          transition: color 0.15s, border-color 0.15s;
+
+          &:hover {
+            border-color: var(--color-error);
+            color: var(--color-error);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Telefoon: menu klapt open onder de balk */
+@media (max-width: 720px) {
+  body {
+    .site-nav {
+      .site-nav-inner {
+        height: 60px;
+        padding: 0 16px;
+      }
+
+      .nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background-color: var(--color-surface);
+        color: var(--color-brand-secondary);
+        font-size: 22px;
+      }
+
+      .nav-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        padding: 16px;
+        border-bottom: 1px solid var(--color-border);
+        background-color: var(--color-surface);
+        box-shadow: 0 12px 24px rgba(14, 30, 59, 0.08);
+
+        &.is-open {
+          display: flex;
+        }
+
+        .nav-links {
+          flex-direction: column;
+
+          .nav-link {
+            padding: 12px 14px;
+            border-radius: 12px;
+          }
+        }
+
+        .nav-user {
+          justify-content: space-between;
+          padding-top: 16px;
+          border-top: 1px solid var(--color-border);
+
+          .user-name {
+            flex: 1;
+          }
+        }
+      }
+    }
+
+    .page-heading .page-heading-inner {
+      padding: 16px;
+    }
+  }
+}

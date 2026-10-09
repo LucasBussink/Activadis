@@ -1,42 +1,67 @@
-<nav class="bg-white border-b border-gray-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between h-16">
-      <div class="flex">
-        <!-- Logo -->
-        <div class="shrink-0 flex items-center">
-          <a href="{{ route('activities.index') }}">
-            <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-          </a>
-        </div>
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="{{ route('activities.index') }}" class="brand">
+      <img src="{{ asset('images/covadis-logo.png') }}" alt="Covadis" class="brand-logo" width="40" height="40">
+      Activadis
+    </a>
 
-        <!-- Navigatie -->
-        @auth
-          <div class="-my-px ms-6 flex space-x-6 sm:ms-10 sm:space-x-8">
-            <x-nav-link :href="route('activities.index')" :active="request()->routeIs('activities.index', 'activities.show')">
+    @auth
+      <button type="button" class="nav-toggle" aria-label="Menu openen" aria-expanded="false" aria-controls="nav-menu" data-nav-toggle>
+        <i class="bi bi-list"></i>
+      </button>
+
+      <nav class="nav-menu" id="nav-menu" aria-label="Hoofdmenu" data-nav-menu>
+        <ul class="nav-links">
+          @php $onActivities = request()->routeIs('activities.index', 'activities.show'); @endphp
+          <li>
+            <a href="{{ route('activities.index') }}" @class(['nav-link', 'active' => $onActivities]) {{ $onActivities ? 'aria-current=page' : '' }}>
               Activiteiten
-            </x-nav-link>
-            @if (Auth::user()->isAdmin())
-              <x-nav-link :href="route('activities.create')" :active="request()->routeIs('activities.create')">
-                Activiteit aanmaken
-              </x-nav-link>
-            @endif
-          </div>
-        @endauth
-      </div>
+            </a>
+          </li>
 
-      <!-- Gebruiker -->
-      @auth
-        <div class="flex items-center gap-4">
-          <span class="text-sm font-medium text-gray-700">{{ Auth::user()->name }}</span>
+          @if (Auth::user()->isAdmin())
+            @php $onCreate = request()->routeIs('activities.create'); @endphp
+            <li>
+              <a href="{{ route('activities.create') }}" @class(['nav-link', 'active' => $onCreate]) {{ $onCreate ? 'aria-current=page' : '' }}>
+                Activiteit aanmaken
+              </a>
+            </li>
+          @endif
+        </ul>
+
+        <div class="nav-user">
+          <span @class(['avatar', 'is-admin' => Auth::user()->isAdmin()])>{{ mb_strtoupper(mb_substr(Auth::user()->name, 0, 1)) }}</span>
+          <span class="user-name">{{ Auth::user()->name }}</span>
 
           <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="text-sm text-gray-500 hover:text-gray-700">
-              Uitloggen
+            <button type="submit" class="logout">
+              <i class="bi bi-box-arrow-right"></i> Uitloggen
             </button>
           </form>
         </div>
-      @endauth
-    </div>
+      </nav>
+    @endauth
   </div>
-</nav>
+</header>
+
+<script>
+  // Menu openen en sluiten op een telefoon
+  (() => {
+    const toggle = document.querySelector('[data-nav-toggle]');
+    const menu = document.querySelector('[data-nav-menu]');
+    if (! toggle || ! menu) return;
+
+    const setOpen = (open) => {
+      menu.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', open);
+      toggle.setAttribute('aria-label', open ? 'Menu sluiten' : 'Menu openen');
+      toggle.querySelector('i').className = open ? 'bi bi-x-lg' : 'bi bi-list';
+    };
+
+    toggle.addEventListener('click', () => setOpen(! menu.classList.contains('is-open')));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
