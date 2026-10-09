@@ -82,12 +82,23 @@
                 }
 
                 $deadlineClosed = $deadline?->isPast();
-                $registered = $activity->getSignedUpUserCount() ?? 0;
+                $registered = $activity->signups_count ?? 0;
+                $images = $activity->images;
                 $isFull = $activity->max_participants && $registered >= $activity->max_participants;
               @endphp
 
-              <a href="{{ route('activities.show', $activity) }}" class="card">
-                <div class="card-media">
+              <article class="card">
+                <div @class(['card-media', 'has-photo' => $images->isNotEmpty()]) {{ $images->count() > 1 ? 'data-carousel' : '' }}>
+                  @if ($images->isNotEmpty())
+                    <div class="slides" data-slides>
+                      @foreach ($images as $image)
+                        <img src="{{ $image->url() }}" alt="{{ $activity->title ?? 'Activiteit' }}" loading="lazy">
+                      @endforeach
+                    </div>
+                  @else
+                    <i class="bi bi-calendar-event card-media-icon"></i>
+                  @endif
+
                   @if ($start)
                     <div class="date-badge">
                       <span class="day">{{ $start->format('j') }}</span>
@@ -106,13 +117,23 @@
                     <span class="status-pill full">Vol</span>
                   @endif
 
-                  <i class="bi bi-calendar-event card-media-icon"></i>
+                  @if ($images->count() > 1)
+                    <button type="button" class="carousel-btn prev" data-dir="-1" aria-label="Vorige foto"><i class="bi bi-chevron-left"></i></button>
+                    <button type="button" class="carousel-btn next" data-dir="1" aria-label="Volgende foto"><i class="bi bi-chevron-right"></i></button>
+                    <div class="dots">
+                      @foreach ($images as $image)
+                        <span @class(['active' => $loop->first])></span>
+                      @endforeach
+                    </div>
+                  @endif
                 </div>
 
                 <div class="card-body">
                   <p class="card-date">{{ $dateText }}</p>
 
-                  <h2 class="card-title">{{ $activity->title ?? 'Naamloze activiteit' }}</h2>
+                  <h2 class="card-title">
+                    <a href="{{ route('activities.show', $activity) }}">{{ $activity->title ?? 'Naamloze activiteit' }}</a>
+                  </h2>
 
                   @if ($activity->description)
                     <p class="card-description">{{ $activity->description }}</p>
@@ -122,10 +143,6 @@
                     @if ($timeText)
                       <li><i class="bi bi-clock"></i> {{ $timeText }}</li>
                     @endif
-                    <li>
-                      <i class="bi bi-tag"></i>
-                      {{ $activity->cost !== null && (float) $activity->cost > 0 ? '€ ' . number_format((float) $activity->cost, 2, ',', '.') : 'Gratis' }}
-                    </li>
                     @if ($activity->max_participants)
                       <li><i class="bi bi-people"></i> {{ $registered }}/{{ $activity->max_participants }} ingeschreven</li>
                     @else
@@ -162,11 +179,74 @@
                     <span class="card-cta">Bekijk <i class="bi bi-arrow-right"></i></span>
                   </div>
                 </div>
-              </a>
+              </article>
             @endforeach
           </div>
         </section>
       @endforeach
     @endif
   </div>
+  <script>
+    // Fotocarousel op de kaartjes: pijltjes, bolletjes en automatisch doorbladeren.
+    // Swipen werkt via scroll-snap in de CSS.
+    (() => {
+      const INTERVAL = 2500; // ms tussen twee foto's
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      document.querySelectorAll('[data-carousel]').forEach((carousel) => {
+        const slides = carousel.querySelector('[data-slides]');
+        const dots = carousel.querySelectorAll('.dots span');
+        const count = dots.length;
+        const card = carousel.closest('.card');
+
+        let timer = null;
+        let visible = false; // kaartje staat in beeld
+        let paused = false;  // muis erboven, focus erin of aangeraakt
+
+        const current = () => Math.round(slides.scrollLeft / slides.clientWidth);
+
+        const goTo = (direction) => {
+          const target = (current() + direction + count) % count;
+          slides.scrollTo({ left: target * slides.clientWidth, behavior: 'smooth' });
+        };
+
+        // Plant de volgende foto in. Een beetje willekeur zodat alle kaartjes niet tegelijk wisselen.
+        const schedule = () => {
+          clearTimeout(timer);
+          if (! visible || paused || reduceMotion) return;
+          timer = setTimeout(() => {
+            goTo(1);
+            schedule();
+          }, INTERVAL + Math.random() * 1500);
+        };
+
+        carousel.querySelectorAll('[data-dir]').forEach((button) => {
+          button.addEventListener('click', () => {
+            goTo(Number(button.dataset.dir));
+            schedule();
+          });
+        });
+
+        slides.addEventListener('scroll', () => {
+          dots.forEach((dot, index) => dot.classList.toggle('active', index === current()));
+        }, { passive: true });
+
+        // Pauzeer zodra iemand met het kaartje bezig is, ga verder als hij weg is
+        const pause = () => { paused = true; schedule(); };
+        const resume = () => { paused = false; schedule(); };
+        card.addEventListener('mouseenter', pause);
+        card.addEventListener('mouseleave', resume);
+        card.addEventListener('focusin', pause);
+        card.addEventListener('focusout', resume);
+        card.addEventListener('touchstart', pause, { passive: true });
+        card.addEventListener('touchend', resume, { passive: true });
+
+        // Alleen doorbladeren als het kaartje in beeld is
+        new IntersectionObserver(([entry]) => {
+          visible = entry.isIntersecting;
+          schedule();
+        }).observe(card);
+      });
+    })();
+  </script>
 </x-app-layout>
