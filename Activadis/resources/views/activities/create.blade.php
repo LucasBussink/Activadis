@@ -155,18 +155,24 @@
       </section>
 
       {{-- Publiceren --}}
-      <section class="form-section publish-section">
-        <input type="hidden" name="publish" value="0">
-        <label class="check">
-          <input type="checkbox" name="publish" id="publish" value="1" @checked(old('publish', true))>
-          Direct publiceren
-        </label>
-        @error('publish') <p class="error">{{ $message }}</p> @enderror
-      </section>
-
       <div class="form-actions">
-        <a href="{{ route('activities.index') }}" class="btn-secondary">Annuleren</a>
-        <button type="submit" class="btn-primary">Activiteit aanmaken</button>
+        {{-- Schuifknop: aan = direct publiceren, uit = opslaan als concept --}}
+        <div class="publish-toggle">
+          <input type="hidden" name="publish" value="0">
+          <label class="switch">
+            <input type="checkbox" name="publish" id="publish" value="1" @checked(old('publish', true))>
+            <span class="switch-label">
+              <span class="on">Direct publiceren</span>
+              <span class="off">Opslaan als concept</span>
+            </span>
+          </label>
+          @error('publish') <p class="error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="form-buttons">
+          <a href="{{ route('activities.index') }}" class="btn-secondary">Annuleren</a>
+          <button type="submit" class="btn-primary" data-submit>Activiteit aanmaken</button>
+        </div>
       </div>
     </form>
   </div>
@@ -205,6 +211,7 @@
         document.querySelectorAll('[data-food-required]').forEach((el) => el.hidden = ! (publish.checked && includesFood.checked));
         document.querySelector('[data-food-field]').hidden = ! includesFood.checked;
         document.querySelector('[data-draft-hint]').hidden = publish.checked;
+        document.querySelector('[data-submit]').textContent = publish.checked ? 'Activiteit aanmaken' : 'Concept opslaan';
       };
       publish.addEventListener('change', syncRequired);
       includesFood.addEventListener('change', syncRequired);

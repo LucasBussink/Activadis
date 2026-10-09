@@ -403,8 +403,96 @@ body {
       /* Acties onderaan */
       .form-actions {
         display: flex;
-        justify-content: flex-end;
-        gap: 12px;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+
+        .form-buttons {
+          display: flex;
+          gap: 12px;
+        }
+
+        /* Schuifknop voor publiceren / concept */
+        .publish-toggle {
+          .switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+
+            /* Eigen schuifknop, zodat de standaardstijl van de browser (en Tailwind) niet meer meetelt */
+            input[type="checkbox"] {
+              appearance: none;
+              position: relative;
+              flex-shrink: 0;
+              width: 48px;
+              height: 28px;
+              margin: 0;
+              padding: 0;
+              border: none;
+              border-radius: 100px;
+              background-color: #c5cad3;
+              background-image: none;
+              color: transparent;
+              cursor: pointer;
+              transition: background-color 0.2s;
+
+              /* Het bolletje */
+              &::after {
+                content: "";
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background-color: #fff;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+                transition: transform 0.2s;
+              }
+
+              &:checked {
+                background-color: var(--color-brand-primary);
+                background-image: none;
+
+                &::after {
+                  transform: translateX(20px);
+                }
+              }
+
+              &:focus {
+                outline: none;
+                box-shadow: none;
+              }
+
+              &:focus-visible {
+                box-shadow: 0 0 0 3px rgba(250, 162, 27, 0.35);
+              }
+            }
+
+            /* Tekst naast de knop wisselt mee */
+            .switch-label .off {
+              display: inline;
+            }
+
+            .switch-label .on {
+              display: none;
+            }
+
+            &:has(input:checked) {
+              .switch-label .on {
+                display: inline;
+              }
+
+              .switch-label .off {
+                display: none;
+              }
+            }
+          }
+        }
 
         .btn-primary,
         .btn-secondary {
@@ -459,6 +547,15 @@ body {
 
         .row {
           grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+          flex-direction: column;
+          align-items: stretch;
+
+          .form-buttons {
+            justify-content: flex-end;
+          }
         }
       }
     }
