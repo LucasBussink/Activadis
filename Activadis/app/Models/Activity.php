@@ -55,6 +55,42 @@ class Activity extends Model
     return $this->hasMany(ActivityImage::class)->orderBy('position');
   }
 
+  public function signups()
+  {
+    return $this->hasMany(Signups::class);
+  }
+
+  public function addUser(User $user): Signups|null
+  {
+    if ($this->isUserSignedUp($user) || $this->getSignedUpUserCount() >= $this->max_participants)
+      return null;
+
+    return $this->signups()->create([
+      'user_id' => $user->id,
+      'activity_id' => $this->id,
+    ]);
+  }
+
+  public function removeUser(User $user): void
+  {
+    $this->signups()->where('user_id', $user->id)->delete();
+  }
+
+  public function isUserSignedUp(User $user): bool
+  {
+    return $this->signups()->where('user_id', $user->id)->exists();
+  }
+
+  public function getSignedUpUsers(): array
+  {
+    return $this->signups()->with('user')->get()->toArray();
+  }
+
+  public function getSignedUpUserCount(): int
+  {
+    return $this->signups()->count();
+  }
+
   /**
    * Formatteer een datum in woorden, bijv. "10 jan 2026 14:00".
    */
