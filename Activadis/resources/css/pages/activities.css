@@ -160,7 +160,8 @@ body {
             transform: translateX(4px);
           }
 
-          .carousel-btn {
+          /* Extra specifiek, anders wint de opacity: 0 van de pijltjes zelf */
+          .card-media .carousel-btn {
             opacity: 1;
           }
         }
