@@ -16,6 +16,7 @@ class ActivityController extends Controller
   {
     $activities = Activity::query()
       ->with('images')
+      ->withCount('signups')
       ->when(! $request->user()->isAdmin(), fn($query) => $query->where('status', Activity::STATUS_PUBLISHED))
       ->orderBy('signup_deadline')
       ->get();
