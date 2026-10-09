@@ -1,192 +1,298 @@
+@push('styles')
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  @vite(['resources/css/pages/activity-form.css'])
+@endpush
+
 <x-app-layout>
-    <h1 class="mb-6 text-2xl font-semibold text-brand-secondary">Nieuwe activiteit</h1>
+  <div class="activity-form-page">
+    <header class="page-header">
+      <a href="{{ route('activities.index') }}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Terug naar overzicht
+      </a>
+      <h1>Nieuwe activiteit</h1>
+      <p class="subtitle">
+        Velden met een <span class="required">*</span> zijn verplicht.
+        <span data-draft-hint>Bij een concept mag je velden leeg laten; die worden als een streepje getoond.</span>
+      </p>
+    </header>
 
-    <form method="POST" action="{{ route('activities.store') }}" novalidate class="space-y-6 rounded-lg border border-gray-200 bg-white p-6">
-        @csrf
+    <form method="POST" action="{{ route('activities.store') }}" enctype="multipart/form-data" novalidate>
+      @csrf
 
-        <p class="text-xs text-gray-500">
-            Velden met een <span class="text-red-600">*</span> zijn verplicht.
-            <span data-draft-hint>Bij een concept mag je velden leeg laten; die worden als "—" getoond.</span>
+      <div class="form-columns">
+      <div class="form-column">
+
+      {{-- Algemeen --}}
+      <section class="form-section">
+        <h2>Algemeen</h2>
+
+        <div @class(['field', 'has-error' => $errors->has('title')])>
+          <label for="title">Titel <span class="required" data-publish-required>*</span></label>
+          <input type="text" name="title" id="title" value="{{ old('title') }}">
+          @error('title') <p class="error">{{ $message }}</p> @enderror
+        </div>
+
+        <div @class(['field', 'has-error' => $errors->has('description')])>
+          <label for="description">Omschrijving</label>
+          <textarea name="description" id="description" rows="4">{{ old('description') }}</textarea>
+          @error('description') <p class="error">{{ $message }}</p> @enderror
+        </div>
+      </section>
+
+      {{-- Foto's --}}
+      <section class="form-section">
+        <h2>Foto's</h2>
+        <p class="section-hint">
+          Maximaal 5 foto's (JPG, PNG of WebP, elk tot 5 MB). De eerste foto is de omslagfoto op het kaartje.
         </p>
 
-        <div>
-            <label for="title" class="block text-sm font-medium text-gray-700">Titel <span class="text-red-600" data-publish-required>*</span></label>
-            <input type="text" name="title" id="title" value="{{ old('title') }}"
-                   @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('title'), 'border-red-500' => $errors->has('title')])>
-            @error('title')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+        <div @class(['dropzone', 'has-error' => $errors->has('images') || $errors->has('images.*')]) data-dropzone>
+          <input type="file" name="images[]" id="images" accept="image/jpeg,image/png,image/webp" multiple>
+          <i class="bi bi-cloud-arrow-up"></i>
+          <p><strong>Kies foto's</strong> of sleep ze hierheen</p>
         </div>
 
-        <div>
-            <label for="description" class="block text-sm font-medium text-gray-700">Omschrijving</label>
-            <textarea name="description" id="description" rows="3"
-                      @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('description'), 'border-red-500' => $errors->has('description')])>{{ old('description') }}</textarea>
-            @error('description')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+        <p class="error" data-photo-message></p>
+        @foreach (collect($errors->get('images'))->merge(collect($errors->get('images.*'))->flatten())->unique() as $message)
+          <p class="error">{{ $message }}</p>
+        @endforeach
+
+        <ul class="photo-previews" data-previews></ul>
+
+        @if ($errors->any())
+          <p class="hint">Na een foutmelding moet je de foto's opnieuw kiezen.</p>
+        @endif
+      </section>
+
+      </div>
+      <div class="form-column">
+
+      {{-- Datum en tijd --}}
+      <section class="form-section">
+        <h2>Datum en tijd</h2>
+
+        <div class="row stacked">
+          <div @class(['field', 'has-error' => $errors->has('starts_at')])>
+            <label for="starts_at">Begintijd <span class="required" data-publish-required>*</span></label>
+            <input type="datetime-local" name="starts_at" id="starts_at" value="{{ old('starts_at') }}" data-date-preview>
+            <p class="preview-text" data-date-preview-for="starts_at"></p>
+            @error('starts_at') <p class="error">{{ $message }}</p> @enderror
+          </div>
+
+          <div @class(['field', 'has-error' => $errors->has('ends_at')])>
+            <label for="ends_at">Eindtijd <span class="required" data-publish-required>*</span></label>
+            <input type="datetime-local" name="ends_at" id="ends_at" value="{{ old('ends_at') }}" data-date-preview>
+            <p class="preview-text" data-date-preview-for="ends_at"></p>
+            <p class="hint">Kies een latere datum voor een activiteit over meerdere dagen.</p>
+            @error('ends_at') <p class="error">{{ $message }}</p> @enderror
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-                <label for="starts_at" class="block text-sm font-medium text-gray-700">Begintijd <span class="text-red-600" data-publish-required>*</span></label>
-                <input type="datetime-local" name="starts_at" id="starts_at" value="{{ old('starts_at') }}" data-date-preview
-                       @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('starts_at'), 'border-red-500' => $errors->has('starts_at')])>
-                <p class="mt-1 text-sm text-gray-600" data-date-preview-for="starts_at"></p>
-                @error('starts_at')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+        <div @class(['field', 'has-error' => $errors->has('signup_deadline')])>
+          <label for="signup_deadline">Inschrijven tot <span class="required" data-publish-required>*</span></label>
+          <input type="datetime-local" name="signup_deadline" id="signup_deadline" value="{{ old('signup_deadline') }}" data-date-preview>
+          <p class="preview-text" data-date-preview-for="signup_deadline"></p>
+          @error('signup_deadline') <p class="error">{{ $message }}</p> @enderror
+        </div>
+      </section>
 
-            <div>
-                <label for="ends_at" class="block text-sm font-medium text-gray-700">Eindtijd <span class="text-red-600" data-publish-required>*</span></label>
-                <input type="datetime-local" name="ends_at" id="ends_at" value="{{ old('ends_at') }}" data-date-preview
-                       @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('ends_at'), 'border-red-500' => $errors->has('ends_at')])>
-                <p class="mt-1 text-sm text-gray-600" data-date-preview-for="ends_at"></p>
-                <p class="mt-1 text-xs text-gray-500">Kies een latere datum voor een activiteit over meerdere dagen.</p>
-                @error('ends_at')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+      {{-- Deelnemers en kosten --}}
+      <section class="form-section">
+        <h2>Deelnemers en kosten</h2>
+
+        <div class="row">
+          <div @class(['field', 'has-error' => $errors->has('min_participants')])>
+            <label for="min_participants">Minimaal aantal deelnemers</label>
+            <input type="number" min="0" name="min_participants" id="min_participants" value="{{ old('min_participants') }}">
+            @error('min_participants') <p class="error">{{ $message }}</p> @enderror
+          </div>
+
+          <div @class(['field', 'has-error' => $errors->has('max_participants')])>
+            <label for="max_participants">Maximaal aantal deelnemers <span class="required" data-publish-required>*</span></label>
+            <input type="number" min="0" name="max_participants" id="max_participants" value="{{ old('max_participants') }}">
+            @error('max_participants') <p class="error">{{ $message }}</p> @enderror
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-                <label for="signup_deadline" class="block text-sm font-medium text-gray-700">Inschrijven tot <span class="text-red-600" data-publish-required>*</span></label>
-                <input type="datetime-local" name="signup_deadline" id="signup_deadline" value="{{ old('signup_deadline') }}" data-date-preview
-                       @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('signup_deadline'), 'border-red-500' => $errors->has('signup_deadline')])>
-                <p class="mt-1 text-sm text-gray-600" data-date-preview-for="signup_deadline"></p>
-                @error('signup_deadline')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+        <div @class(['field', 'has-error' => $errors->has('personal_contribution')])>
+          <label for="personal_contribution">Eigen bijdrage</label>
+          <input type="text" inputmode="decimal" name="personal_contribution" id="personal_contribution"
+                 placeholder="bijv. 12,50 of - voor geen bijdrage" value="{{ old('personal_contribution') }}">
+          <p class="hint">Wordt alleen getoond op de detailpagina.</p>
+          @error('personal_contribution') <p class="error">{{ $message }}</p> @enderror
+        </div>
+      </section>
 
-            <div>
-                <label for="personal_contribution" class="block text-sm font-medium text-gray-700">Eigen bijdrage</label>
-                <input type="text" inputmode="decimal" placeholder="bijv. 12,50, of - voor geen bijdrage" name="personal_contribution" id="personal_contribution" value="{{ old('personal_contribution') }}"
-                       @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('personal_contribution'), 'border-red-500' => $errors->has('personal_contribution')])>
-                <p class="mt-1 text-xs text-gray-500">Wordt alleen getoond op de detailpagina.</p>
-                @error('personal_contribution')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+      </div>
+      </div>
+
+      {{-- Opties --}}
+      <section class="form-section">
+        <h2>Opties</h2>
+
+        <div class="checks">
+          <label class="check">
+            <input type="checkbox" name="includes_food" id="includes_food" value="1" @checked(old('includes_food'))>
+            Inclusief eten
+          </label>
+
+          <label class="check">
+            <input type="checkbox" name="allow_partner" value="1" @checked(old('allow_partner'))>
+            +1 meenemen
+          </label>
+
+          <label class="check">
+            <input type="checkbox" name="is_external" value="1" @checked(old('is_external'))>
+            Externe activiteit
+          </label>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-                <label for="min_participants" class="block text-sm font-medium text-gray-700">Minimaal aantal deelnemers</label>
-                <input type="number" min="0" name="min_participants" id="min_participants" value="{{ old('min_participants') }}"
-                       @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('min_participants'), 'border-red-500' => $errors->has('min_participants')])>
-                @error('min_participants')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div>
-                <label for="max_participants" class="block text-sm font-medium text-gray-700">Maximaal aantal deelnemers <span class="text-red-600" data-publish-required>*</span></label>
-                <input type="number" min="0" name="max_participants" id="max_participants" value="{{ old('max_participants') }}"
-                       @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('max_participants'), 'border-red-500' => $errors->has('max_participants')])>
-                @error('max_participants')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+        <div @class(['field', 'has-error' => $errors->has('food_description')]) data-food-field>
+          <label for="food_description">Omschrijving eten <span class="required" data-food-required>*</span></label>
+          <textarea name="food_description" id="food_description" rows="2">{{ old('food_description') }}</textarea>
+          @error('food_description') <p class="error">{{ $message }}</p> @enderror
         </div>
+      </section>
 
-        <div>
-            <label for="food_description" class="block text-sm font-medium text-gray-700">Omschrijving eten <span class="text-red-600" data-food-required>*</span></label>
-            <textarea name="food_description" id="food_description" rows="2"
-                      @class(['mt-1 block w-full rounded-md shadow-sm focus:border-brand-primary focus:ring-brand-primary', 'border-gray-300' => ! $errors->has('food_description'), 'border-red-500' => $errors->has('food_description')])>{{ old('food_description') }}</textarea>
-            @error('food_description')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
+      {{-- Publiceren --}}
+      <section class="form-section publish-section">
+        <input type="hidden" name="publish" value="0">
+        <label class="check">
+          <input type="checkbox" name="publish" id="publish" value="1" @checked(old('publish', true))>
+          Direct publiceren
+        </label>
+        @error('publish') <p class="error">{{ $message }}</p> @enderror
+      </section>
 
-        <div class="space-y-3">
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" name="includes_food" id="includes_food" value="1" @checked(old('includes_food'))
-                       class="rounded border-gray-300 text-brand-primary focus:ring-brand-primary">
-                Inclusief eten
-            </label>
-            @error('includes_food')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" name="allow_partner" value="1" @checked(old('allow_partner'))
-                       class="rounded border-gray-300 text-brand-primary focus:ring-brand-primary">
-                +1 meenemen
-            </label>
-            @error('allow_partner')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" name="is_external" value="1" @checked(old('is_external'))
-                       class="rounded border-gray-300 text-brand-primary focus:ring-brand-primary">
-                Externe activiteit (aanmelden zonder account mogelijk)
-            </label>
-            @error('is_external')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="hidden" name="publish" value="0">
-                <input type="checkbox" name="publish" id="publish" value="1" @checked(old('publish', true))
-                       class="rounded border-gray-300 text-brand-primary focus:ring-brand-primary">
-                publiceren (uitvinken als het een concept is)
-            </label>
-            @error('publish')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="flex justify-end gap-3">
-            <a href="{{ route('activities.index') }}" class="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-                Annuleren
-            </a>
-            <button type="submit" class="rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-                Activiteit aanmaken
-            </button>
-        </div>
+      <div class="form-actions">
+        <a href="{{ route('activities.index') }}" class="btn-secondary">Annuleren</a>
+        <button type="submit" class="btn-primary">Activiteit aanmaken</button>
+      </div>
     </form>
+  </div>
 
-    <script>
-        // Toon gekozen datums in woorden, bijv. "10 jan 2026 14:00".
-        (() => {
-            const formatter = new Intl.DateTimeFormat('nl-NL', {
-                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-            });
-            const startsAt = document.getElementById('starts_at');
-            const endsAt = document.getElementById('ends_at');
+  <script>
+    // Toon gekozen datums in woorden, bijv. "10 jan 2026 14:00".
+    (() => {
+      const formatter = new Intl.DateTimeFormat('nl-NL', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+      const startsAt = document.getElementById('starts_at');
+      const endsAt = document.getElementById('ends_at');
 
-            const update = (input) => {
-                const preview = document.querySelector(`[data-date-preview-for="${input.id}"]`);
-                preview.textContent = input.value
-                    ? formatter.format(new Date(input.value)).replace(/\./g, '').replace(' om ', ' ')
-                    : '';
-            };
+      const update = (input) => {
+        const preview = document.querySelector(`[data-date-preview-for="${input.id}"]`);
+        preview.textContent = input.value
+          ? formatter.format(new Date(input.value)).replace(/\./g, '').replace(' om ', ' ')
+          : '';
+      };
 
-            document.querySelectorAll('[data-date-preview]').forEach((input) => {
-                input.addEventListener('input', () => update(input));
-                update(input);
-            });
+      document.querySelectorAll('[data-date-preview]').forEach((input) => {
+        input.addEventListener('input', () => update(input));
+        update(input);
+      });
 
-            // Eindtijd kan niet vóór de begintijd liggen.
-            const syncMin = () => { endsAt.min = startsAt.value; };
-            startsAt.addEventListener('input', syncMin);
-            syncMin();
+      // Eindtijd kan niet vóór de begintijd liggen.
+      const syncMin = () => { endsAt.min = startsAt.value; };
+      startsAt.addEventListener('input', syncMin);
+      syncMin();
 
-            // Bij een concept mogen velden leeg blijven; alleen bij publiceren zijn ze verplicht.
-            const publish = document.getElementById('publish');
-            const includesFood = document.getElementById('includes_food');
-            const syncRequired = () => {
-                document.querySelectorAll('[data-publish-required]').forEach((el) => el.hidden = ! publish.checked);
-                document.querySelectorAll('[data-food-required]').forEach((el) => el.hidden = ! (publish.checked && includesFood.checked));
-                document.querySelector('[data-draft-hint]').hidden = publish.checked;
-            };
-            publish.addEventListener('change', syncRequired);
-            includesFood.addEventListener('change', syncRequired);
-            syncRequired();
-        })();
-    </script>
+      // Bij een concept mogen velden leeg blijven; alleen bij publiceren zijn ze verplicht.
+      const publish = document.getElementById('publish');
+      const includesFood = document.getElementById('includes_food');
+      const syncRequired = () => {
+        document.querySelectorAll('[data-publish-required]').forEach((el) => el.hidden = ! publish.checked);
+        document.querySelectorAll('[data-food-required]').forEach((el) => el.hidden = ! (publish.checked && includesFood.checked));
+        document.querySelector('[data-food-field]').hidden = ! includesFood.checked;
+        document.querySelector('[data-draft-hint]').hidden = publish.checked;
+      };
+      publish.addEventListener('change', syncRequired);
+      includesFood.addEventListener('change', syncRequired);
+      syncRequired();
+    })();
+
+    // Foto's kiezen, voorvertonen, verwijderen en een omslagfoto aanwijzen.
+    (() => {
+      const MAX_FILES = 5;
+      const MAX_SIZE = 5 * 1024 * 1024;
+      const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+      const dropzone = document.querySelector('[data-dropzone]');
+      const input = document.getElementById('images');
+      const list = document.querySelector('[data-previews]');
+      const message = document.querySelector('[data-photo-message]');
+      let files = [];
+
+      // Zet onze lijst terug in het echte bestandsveld, zodat het formulier ze meestuurt.
+      const syncInput = () => {
+        const transfer = new DataTransfer();
+        files.forEach((file) => transfer.items.add(file));
+        input.files = transfer.files;
+      };
+
+      const render = () => {
+        list.querySelectorAll('img').forEach((img) => URL.revokeObjectURL(img.src));
+        list.innerHTML = '';
+
+        files.forEach((file, index) => {
+          const item = document.createElement('li');
+          item.className = 'preview';
+          item.innerHTML = `
+            <img alt="">
+            ${index === 0
+              ? '<span class="cover-badge">Omslag</span>'
+              : `<button type="button" class="make-cover" data-action="cover" data-index="${index}" title="Maak omslagfoto"><i class="bi bi-star"></i></button>`}
+            <button type="button" class="remove" data-action="remove" data-index="${index}" title="Verwijderen"><i class="bi bi-x-lg"></i></button>
+          `;
+          const img = item.querySelector('img');
+          img.src = URL.createObjectURL(file);
+          img.alt = file.name;
+          list.append(item);
+        });
+
+        dropzone.classList.toggle('has-files', files.length > 0);
+        syncInput();
+      };
+
+      input.addEventListener('change', () => {
+        const problems = new Set();
+
+        [...input.files].forEach((file) => {
+          if (! TYPES.includes(file.type)) {
+            problems.add(`${file.name} is geen JPG, PNG of WebP.`);
+          } else if (file.size > MAX_SIZE) {
+            problems.add(`${file.name} is groter dan 5 MB.`);
+          } else if (files.length >= MAX_FILES) {
+            problems.add(`Je kunt maximaal ${MAX_FILES} foto's toevoegen.`);
+          } else if (! files.some((f) => f.name === file.name && f.size === file.size)) {
+            files.push(file);
+          }
+        });
+
+        message.textContent = [...problems].join(' ');
+        render();
+      });
+
+      list.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action]');
+        if (! button) return;
+
+        const index = Number(button.dataset.index);
+        if (button.dataset.action === 'remove') {
+          files.splice(index, 1);
+        } else {
+          // Verplaats de gekozen foto naar voren, die wordt de omslagfoto.
+          files.unshift(files.splice(index, 1)[0]);
+        }
+        message.textContent = '';
+        render();
+      });
+
+      // Visuele feedback tijdens slepen (het slepen zelf regelt het bestandsveld).
+      ['dragenter', 'dragover'].forEach((name) =>
+        dropzone.addEventListener(name, () => dropzone.classList.add('is-dragging')));
+      ['dragleave', 'drop'].forEach((name) =>
+        dropzone.addEventListener(name, () => dropzone.classList.remove('is-dragging')));
+    })();
+  </script>
 </x-app-layout>
