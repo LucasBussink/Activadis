@@ -190,7 +190,7 @@
     // Fotocarousel op de kaartjes: pijltjes, bolletjes en automatisch doorbladeren.
     // Swipen werkt via scroll-snap in de CSS.
     (() => {
-      const INTERVAL = 3000; // ms tussen twee foto's
+      const INTERVAL = 2500; // ms tussen twee foto's
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       document.querySelectorAll('[data-carousel]').forEach((carousel) => {
