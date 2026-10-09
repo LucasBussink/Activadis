@@ -334,6 +334,14 @@ body {
               background-color: var(--color-error);
               color: #fff;
             }
+
+            &.signed-up {
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              background-color: #1c7c4d;
+              color: #fff;
+            }
           }
         }
 

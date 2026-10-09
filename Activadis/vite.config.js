@@ -10,6 +10,7 @@ export default defineConfig({
         'resources/css/pages/login.css',
         'resources/css/pages/activities.css',
         'resources/css/pages/activity-form.css',
+        'resources/css/pages/activity-detail.css',
         'resources/js/app.js',
       ],
       refresh: true,
