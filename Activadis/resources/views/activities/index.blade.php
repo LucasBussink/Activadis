@@ -113,6 +113,8 @@
 
                   @if ($activity->status === 'draft')
                     <span class="status-pill">Concept</span>
+                  @elseif ($activity->is_signed_up)
+                    <span class="status-pill signed-up"><i class="bi bi-check-lg"></i> Ingeschreven</span>
                   @elseif ($isFull)
                     <span class="status-pill full">Vol</span>
                   @endif
