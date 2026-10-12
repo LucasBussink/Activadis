@@ -96,7 +96,7 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 15,
+            'expire' => 60,
             'throttle' => 60,
         ],
     ],
@@ -113,5 +113,17 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+
+    // voor gebruikers
+
+    'passwords' => [
+        'invites' => [
+            'provider' => 'users',
+            'table' => 'user_invite_tokens',
+            'expire' => 40320,
+            'throttle' => 60,
+        ],
+    ],
 
 ];

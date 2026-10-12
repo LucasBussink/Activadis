@@ -53,7 +53,7 @@ class UserController extends Controller
         $user->email_verified_at = now();
         $user->save();
 
-        $token = Password::createToken($user);
+        $token = Password::broker('invites')->createToken($user);
         $user->notify(new SetPasswordNotification($token));
 
         return redirect()
