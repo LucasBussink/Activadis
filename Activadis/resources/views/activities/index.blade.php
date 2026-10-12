@@ -18,6 +18,11 @@
         </p>
       </div>
 
+      <div class="search-bar">
+        <i class="bi bi-search"></i>
+        <input type="search" id="activity-search" placeholder="Zoek een activiteit..." aria-label="Zoek activiteiten">
+      </div>
+
       @if (auth()->user()?->isAdmin())
         <a href="{{ route('activities.create') }}" class="btn-primary">
           <i class="bi bi-plus-lg"></i> Nieuwe activiteit
@@ -189,6 +194,26 @@
     @endif
   </div>
   <script>
+    // Zoekbalk: filtert de kaartjes op titel en verbergt lege secties.
+    (() => {
+      const searchInput = document.getElementById('activity-search');
+      if (! searchInput) return;
+
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+
+        document.querySelectorAll('.cards .card').forEach((card) => {
+          const title = card.querySelector('.card-title')?.textContent.toLowerCase() ?? '';
+          card.style.display = title.includes(query) ? '' : 'none';
+        });
+
+        document.querySelectorAll('.section').forEach((section) => {
+          const anyVisible = Array.from(section.querySelectorAll('.card')).some((card) => card.style.display !== 'none');
+          section.style.display = anyVisible ? '' : 'none';
+        });
+      });
+    })();
+
     // Fotocarousel op de kaartjes: pijltjes, bolletjes en automatisch doorbladeren.
     // Swipen werkt via scroll-snap in de CSS.
     (() => {
