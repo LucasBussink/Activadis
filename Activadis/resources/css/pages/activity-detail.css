@@ -42,6 +42,27 @@ body {
           letter-spacing: -0.5px;
           color: var(--color-brand-secondary);
         }
+
+        .edit-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-left: auto;
+          padding: 7px 16px;
+          border: 1px solid var(--color-border);
+          border-radius: 100px;
+          background-color: var(--color-surface);
+          color: var(--color-text-secondary);
+          font-size: 14px;
+          font-weight: 600;
+          text-decoration: none;
+          transition: 0.2s;
+
+          &:hover {
+            border-color: var(--color-brand-primary);
+            color: var(--color-brand-primary-dark);
+          }
+        }
       }
 
       /* Kerngegevens in één oogopslag onder de titel */

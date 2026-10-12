@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ActivityController extends Controller
@@ -40,6 +41,30 @@ class ActivityController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $validated = $this->validatedActivityData($request);
+
+        $activity = Activity::create($validated);
+
+        foreach ($request->file('images', []) as $position => $file) {
+            $activity->images()->create([
+                'path' => $file->store('activities', 'public'),
+                'position' => $position,
+            ]);
+        }
+
+        return redirect()->route('activities.index')->with('status', 'Activiteit aangemaakt.');
+    }
+
+    /**
+     * Valideer en normaliseer de ingevoerde activiteitgegevens.
+     *
+     * Wordt door store() en update() gebruikt, zodat beide dezelfde regels hanteren
+     * (bij publiceren zijn meer velden verplicht dan bij een concept).
+     *
+     * @return array<string, mixed>
+     */
+    private function validatedActivityData(Request $request, ?Activity $activity = null): array
+    {
         // Een "-" bij eigen bijdrage betekent: geen bijdrage (0). Een komma mag als decimaalteken.
         $contribution = trim((string) $request->input('personal_contribution'));
         if (in_array($contribution, ['-', '--', '—'], true)) {
@@ -59,6 +84,16 @@ class ActivityController extends Controller
         $hasValidStart = $request->filled('starts_at') && strtotime((string) $request->input('starts_at')) !== false;
         $hasValidMin = filter_var($request->input('min_participants'), FILTER_VALIDATE_INT) !== false;
 
+        // Bij bewerken telt een nieuwe foto alleen mee als die niet al verwijderd wordt.
+        $imagesRule = $activity
+            ? function (string $attribute, mixed $value, \Closure $fail) use ($activity, $request): void {
+                $remaining = $activity->images()->whereNotIn('id', $request->input('remove_images', []))->count();
+                if ($remaining + count($value) > 5) {
+                    $fail("Je kunt maximaal 5 foto's hebben.");
+                }
+            }
+        : 'max:5';
+
         $validated = $request->validate([
             'title' => [$required, 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -73,8 +108,10 @@ class ActivityController extends Controller
             'allow_partner' => ['boolean'],
             'is_external' => ['boolean'],
             'publish' => ['boolean'],
-            'images' => ['nullable', 'array', 'max:5'],
+            'images' => ['nullable', 'array', $imagesRule],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'remove_images' => ['nullable', 'array'],
+            'remove_images.*' => ['integer'],
         ], [
             'required' => 'Vul een geldige waarde in.',
             'images.max' => "Je kunt maximaal 5 foto's uploaden.",
@@ -84,27 +121,14 @@ class ActivityController extends Controller
             'images.*.uploaded' => 'Uploaden van een foto is mislukt. Is hij kleiner dan 5 MB?',
         ]);
 
-        unset($validated['publish']);
-        $validated['status'] = $request->boolean('publish')
-          ? Activity::STATUS_PUBLISHED
-          : Activity::STATUS_DRAFT;
+        unset($validated['publish'], $validated['images'], $validated['remove_images']);
 
+        $validated['status'] = $publish ? Activity::STATUS_PUBLISHED : Activity::STATUS_DRAFT;
         $validated['includes_food'] = $request->boolean('includes_food');
         $validated['allow_partner'] = $request->boolean('allow_partner');
         $validated['is_external'] = $request->boolean('is_external');
 
-        unset($validated['images']);
-
-        $activity = Activity::create($validated);
-
-        foreach ($request->file('images', []) as $position => $file) {
-            $activity->images()->create([
-                'path' => $file->store('activities', 'public'),
-                'position' => $position,
-            ]);
-        }
-
-        return redirect()->route('activities.index')->with('status', 'Activiteit aangemaakt.');
+        return $validated;
     }
 
     /**
@@ -125,17 +149,43 @@ class ActivityController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Activity $activity): View
     {
-        //
+        $activity->load('images');
+
+        return view('activities.edit', [
+            'activity' => $activity,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Activity $activity): RedirectResponse
     {
-        //
+        $validated = $this->validatedActivityData($request, $activity);
+
+        $activity->update($validated);
+
+        $removeIds = $request->input('remove_images', []);
+        if (! empty($removeIds)) {
+            $imagesToRemove = $activity->images()->whereIn('id', $removeIds)->get();
+
+            foreach ($imagesToRemove as $image) {
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+        }
+
+        $position = $activity->images()->count();
+        foreach ($request->file('images', []) as $file) {
+            $activity->images()->create([
+                'path' => $file->store('activities', 'public'),
+                'position' => $position++,
+            ]);
+        }
+
+        return redirect()->route('activities.show', $activity)->with('status', 'Activiteit bijgewerkt.');
     }
 
     /**

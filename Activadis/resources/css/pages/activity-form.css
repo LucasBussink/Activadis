@@ -308,6 +308,17 @@ body {
             &:hover {
               background-color: var(--color-brand-dark);
             }
+
+            /* Verborgen checkbox i.p.v. een echte button, voor het verwijderen van bestaande foto's */
+            input[type="checkbox"] {
+              position: absolute;
+              inset: 0;
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              opacity: 0;
+              cursor: pointer;
+            }
           }
 
           .remove {
@@ -316,6 +327,19 @@ body {
 
           .make-cover {
             left: 8px;
+          }
+        }
+
+        /* Bestaande foto die is aangevinkt om te verwijderen */
+        .preview.marked-removed {
+          opacity: 0.4;
+
+          img {
+            filter: grayscale(1);
+          }
+
+          .remove {
+            background-color: var(--color-error);
           }
         }
       }
