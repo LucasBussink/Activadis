@@ -39,6 +39,9 @@
           <button type="button" class="chip active" data-sort="start" aria-pressed="true">Eerstvolgende</button>
           <button type="button" class="chip" data-sort="deadline" aria-pressed="false">Inschrijftermijn</button>
           <button type="button" class="chip" data-sort="title" aria-pressed="false">A tot Z</button>
+          <button type="button" class="chip chip-direction" id="sort-direction" aria-pressed="false" aria-label="Volgorde omdraaien" title="Volgorde omdraaien">
+            <i class="bi bi-arrow-down-up"></i> Omdraaien
+          </button>
         </div>
 
         @if ($isAdmin)
@@ -238,7 +241,7 @@
       if (! input) return;
 
       const clearButton = document.getElementById('search-clear');
-      const chips = document.querySelectorAll('#sort-chips .chip');
+      const chips = document.querySelectorAll('#sort-chips .chip[data-sort]');
       const expiredToggle = document.getElementById('show-expired');
       const noResults = document.getElementById('no-results');
       const subtitle = document.getElementById('activity-subtitle');
@@ -246,17 +249,25 @@
       const isAdmin = Boolean(document.querySelector('.section-title'));
 
       let sortKey = 'start';
+      let reversed = false;
 
       // Hoofdletters en accenten negeren: "cafe" vindt ook "café"
       const normalize = (text) => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       cards.forEach((card) => { card.dataset.search = normalize(card.dataset.search); });
 
-      // Activiteiten zonder datum komen altijd onderaan
-      const number = (value) => (value === '' ? Infinity : Number(value));
+      // Activiteiten zonder datum komen altijd onderaan, ook als de volgorde is omgedraaid
+      const byNumber = (key) => (a, b) => {
+        const x = a.dataset[key];
+        const y = b.dataset[key];
+        if (x === '' && y === '') return 0;
+        if (x === '') return 1;
+        if (y === '') return -1;
+        return (Number(x) - Number(y)) * (reversed ? -1 : 1);
+      };
       const comparers = {
-        start: (a, b) => number(a.dataset.start) - number(b.dataset.start),
-        deadline: (a, b) => number(a.dataset.deadline) - number(b.dataset.deadline),
-        title: (a, b) => a.dataset.title.localeCompare(b.dataset.title, 'nl'),
+        start: byNumber('start'),
+        deadline: byNumber('deadline'),
+        title: (a, b) => a.dataset.title.localeCompare(b.dataset.title, 'nl') * (reversed ? -1 : 1),
       };
 
       const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -316,6 +327,14 @@
           input.value = '';
           update();
         }
+      });
+
+      const directionButton = document.getElementById('sort-direction');
+      directionButton?.addEventListener('click', () => {
+        reversed = ! reversed;
+        directionButton.classList.toggle('active', reversed);
+        directionButton.setAttribute('aria-pressed', reversed);
+        update();
       });
 
       chips.forEach((chip) => {
