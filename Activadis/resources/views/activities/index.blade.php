@@ -44,6 +44,7 @@
         @if ($isAdmin)
           <label class="toggle-expired">
             <input type="checkbox" id="show-expired">
+            <i class="bi bi-clock-history"></i>
             <span>Toon verlopen</span>
           </label>
         @endif
