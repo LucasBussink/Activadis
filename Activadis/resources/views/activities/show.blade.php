@@ -89,6 +89,12 @@
         @elseif ($isFull)
           <span class="status-pill full">Vol</span>
         @endif
+
+        @if (auth()->user()?->isAdmin())
+          <a href="{{ route('activities.edit', $activity) }}" class="edit-link">
+            <i class="bi bi-pencil-square"></i> Bewerken
+          </a>
+        @endif
       </div>
 
       <ul class="key-facts">

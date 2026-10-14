@@ -12,7 +12,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::resource('activities', ActivityController::class)->only(['create', 'store'])->middleware('admin');
+    Route::resource('activities', ActivityController::class)->only(['create', 'store', 'edit', 'update'])->middleware('admin');
     Route::resource('activities', ActivityController::class)->only(['index', 'show']);
 
     Route::post('/activities/{activity}/signup', [SignupController::class, 'store'])->name('activities.signup');
