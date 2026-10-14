@@ -19,6 +19,11 @@ class ActivityController extends Controller
             ->withCount('signups')
             ->withExists(['signups as is_signed_up' => fn ($query) => $query->where('user_id', $request->user()->id)])
             ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('status', Activity::STATUS_PUBLISHED))
+            // Verlopen activiteiten (einde of anders begin ligt in het verleden) zijn alleen voor admins zichtbaar.
+            // Activiteiten zonder datum blijven staan, die zijn nog niet ingepland.
+            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where(
+                fn ($query) => $query->whereNull('starts_at')->orWhereRaw('COALESCE(ends_at, starts_at) >= ?', [now()])
+            ))
             ->orderBy('signup_deadline')
             ->get();
 

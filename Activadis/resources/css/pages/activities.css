@@ -93,6 +93,105 @@ body {
             }
         }
 
+        [hidden] {
+            display: none !important;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px 24px;
+            margin-bottom: 28px;
+
+            .chips {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+
+                .chips-label {
+                    margin-right: 4px;
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                }
+            }
+
+            .chip {
+                padding: 7px 16px;
+                border-radius: 100px;
+                border: 1px solid var(--color-border);
+                background-color: #fff;
+                color: var(--color-brand-secondary);
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.2s;
+
+                &:hover {
+                    border-color: var(--color-brand-primary);
+                }
+
+                &:focus-visible {
+                    outline: 2px solid var(--color-brand-primary);
+                    outline-offset: 2px;
+                }
+
+                &.active {
+                    background-color: var(--color-brand-secondary);
+                    border-color: var(--color-brand-secondary);
+                    color: #fff;
+                }
+            }
+
+            .toggle-expired {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                color: var(--color-text-secondary);
+                cursor: pointer;
+
+                input {
+                    accent-color: var(--color-brand-primary);
+                }
+            }
+        }
+
+        .search-clear {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: none;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: 0.2s;
+
+            &:hover {
+                background-color: rgba(14, 30, 59, 0.08);
+                color: var(--color-brand-secondary);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--color-brand-primary);
+            }
+        }
+
+        .card.is-expired {
+            opacity: 0.6;
+        }
+
+        .card-media .status-pill.expired {
+            background-color: var(--color-brand-secondary);
+            color: #fff;
+        }
+
         .flash {
             display: flex;
             align-items: center;
