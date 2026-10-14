@@ -45,7 +45,8 @@
       ? 'Nog ' . $deadline->diffForHumans(['parts' => 1, 'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])
       : null;
   $isDraft = $activity->status === \App\Models\Activity::STATUS_DRAFT;
-  $signupOpen = !$isDraft && !$deadlineClosed;
+  $ended = $activity->hasEnded();
+  $signupOpen = !$isDraft && !$deadlineClosed && !$ended;
   $registered = $activity->signups_count;
   $max = $activity->max_participants;
   $isFull = $max && $registered >= $max;
@@ -54,6 +55,7 @@
   $signupState = match (true) {
       $isSignedUp => 'signed-up',
       $isDraft => 'draft',
+      $ended => 'ended',
       $deadlineClosed => 'closed',
       $isFull => 'full',
       default => 'open',
@@ -102,7 +104,11 @@
         @if ($start)
           <li><i class="bi bi-clock"></i> {{ $timeText }}</li>
         @endif
-        <li><i class="bi bi-wallet2"></i> {{ $contributionText === '—' ? 'Bijdrage volgt' : $contributionText }}</li>
+        <li><i class="bi bi-wallet2"></i> {{ match (true) {
+            $contributionText === '—' => 'Bijdrage volgt',
+            $contributionText === 'Gratis' => 'Gratis',
+            default => 'Eigen bijdrage ' . $contributionText,
+        } }}</li>
         @if ($startsInText)
           <li class="highlight"><i class="bi bi-stopwatch"></i> {{ ucfirst($startsInText) }}</li>
         @endif
@@ -219,23 +225,6 @@
 
           <ul class="info-list">
             <li>
-              <i class="bi bi-calendar-event"></i>
-              <div>
-                <p class="label">Datum</p>
-                <p class="value">{{ $dateText }}</p>
-                @if ($startsInText)
-                  <p class="sub">{{ ucfirst($startsInText) }}</p>
-                @endif
-              </div>
-            </li>
-            <li>
-              <i class="bi bi-clock"></i>
-              <div>
-                <p class="label">Tijd</p>
-                <p class="value">{{ $timeText }}</p>
-              </div>
-            </li>
-            <li>
               <i class="bi bi-hourglass-split"></i>
               <div>
                 <p class="label">Inschrijven tot</p>
@@ -251,13 +240,6 @@
                 @if ($deadlineLeftText)
                   <p @class(['sub', 'urgent' => $deadlineSoon])>{{ $deadlineLeftText }}</p>
                 @endif
-              </div>
-            </li>
-            <li>
-              <i class="bi bi-wallet2"></i>
-              <div>
-                <p class="label">Eigen bijdrage</p>
-                <p class="value">{{ $contributionText }}</p>
               </div>
             </li>
             <li>
@@ -333,12 +315,14 @@
                     'bi',
                     'bi-pencil-square' => $signupState === 'draft',
                     'bi-lock-fill' => $signupState === 'closed',
+                    'bi-calendar-check' => $signupState === 'ended',
                     'bi-x-circle-fill' => $signupState === 'full',
                 ])></i>
                 <div>
                   <p class="state-title">
                     {{ match ($signupState) {
                         'draft' => 'Nog niet open',
+                        'ended' => 'Activiteit is geweest',
                         'closed' => 'Inschrijving gesloten',
                         'full' => 'Activiteit is vol',
                     } }}
@@ -346,6 +330,7 @@
                   <p class="state-text">
                     {{ match ($signupState) {
                         'draft' => 'Dit is een concept. Inschrijven kan na publiceren.',
+                        'ended' => 'Inschrijven kan niet meer.',
                         'closed' => 'De deadline om in te schrijven is verstreken.',
                         'full' => 'Alle plekken zijn bezet.',
                     } }}
