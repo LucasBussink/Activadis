@@ -8,8 +8,9 @@
     <header class="page-header">
       <div>
         <h1>Activiteiten</h1>
-                <p class="subtitle">
-          @if (auth()->user()?->isAdmin())
+<p class="subtitle" id="activity-subtitle">
+          @php $isAdmin = auth()->user()?->isAdmin(); @endphp
+          @if ($isAdmin)
             @php $conceptCount = $activities->where('status', 'draft')->count(); @endphp
             {{ $activities->count() - $conceptCount }} gepubliceerd, {{ $conceptCount }} {{ $conceptCount === 1 ? 'concept' : 'concepten' }}
           @else
@@ -20,7 +21,8 @@
 
       <div class="search-bar">
         <i class="bi bi-search"></i>
-        <input type="search" id="activity-search" placeholder="Zoek een activiteit..." aria-label="Zoek activiteiten">
+        <input type="search" id="activity-search" placeholder="Zoek een activiteit..." aria-label="Zoek activiteiten" autocomplete="off">
+        <button type="button" class="search-clear" id="search-clear" aria-label="Zoekopdracht wissen" hidden><i class="bi bi-x-lg"></i></button>
       </div>
 
       @if (auth()->user()?->isAdmin())
@@ -29,6 +31,28 @@
         </a>
       @endif
     </header>
+
+    @if ($activities->isNotEmpty())
+      <div class="toolbar">
+        <div class="chips" role="group" aria-label="Sorteren" id="sort-chips">
+          <span class="chips-label">Sorteer op</span>
+          <button type="button" class="chip active" data-sort="start" aria-pressed="true">Eerstvolgende</button>
+          <button type="button" class="chip" data-sort="deadline" aria-pressed="false">Inschrijftermijn</button>
+          <button type="button" class="chip" data-sort="title" aria-pressed="false">A tot Z</button>
+          <button type="button" class="chip chip-direction" id="sort-direction" aria-pressed="false" aria-label="Volgorde omdraaien" title="Volgorde omdraaien">
+            <i class="bi bi-arrow-down-up"></i> Omdraaien
+          </button>
+        </div>
+
+        @if ($isAdmin)
+          <label class="toggle-expired">
+            <input type="checkbox" id="show-expired">
+            <i class="bi bi-clock-history"></i>
+            <span>Toon verlopen</span>
+          </label>
+        @endif
+      </div>
+    @endif
 
     @if (session('status'))
       <p class="flash"><i class="bi bi-check-circle-fill"></i> {{ session('status') }}</p>
@@ -86,13 +110,23 @@
                     $timeText = $start->format('H:i') . ($end ? ' - ' . $end->format('H:i') : '');
                 }
 
+                $expired = ($end ?? $start)?->isPast() ?? false;
                 $deadlineClosed = $deadline?->isPast();
                 $registered = $activity->signups_count ?? 0;
                 $images = $activity->images;
                 $isFull = $activity->max_participants && $registered >= $activity->max_participants;
               @endphp
 
-              <article class="card">
+              <article
+                @class(['card', 'is-expired' => $expired])
+                @if ($expired) hidden @endif
+                data-status="{{ $activity->status }}"
+                data-expired="{{ $expired ? '1' : '0' }}"
+                data-title="{{ mb_strtolower($activity->title ?? '') }}"
+                data-search="{{ mb_strtolower(($activity->title ?? '').' '.($activity->description ?? '').' '.$dateText) }}"
+                data-start="{{ $start?->timestamp ?? '' }}"
+                data-deadline="{{ $deadline?->timestamp ?? '' }}"
+              >
                 <div @class(['card-media', 'has-photo' => $images->isNotEmpty()]) {{ $images->count() > 1 ? 'data-carousel' : '' }}>
                   @if ($images->isNotEmpty())
                     <div class="slides" data-slides>
@@ -118,6 +152,8 @@
 
                   @if ($activity->status === 'draft')
                     <span class="status-pill">Concept</span>
+                  @elseif ($expired)
+                    <span class="status-pill expired">Verlopen</span>
                   @elseif ($activity->is_signed_up)
                     <span class="status-pill signed-up"><i class="bi bi-check-lg"></i> Ingeschreven</span>
                   @elseif ($isFull)
@@ -191,27 +227,129 @@
           </div>
         </section>
       @endforeach
+
+      <div class="empty-state" id="no-results" hidden>
+        <i class="bi bi-search"></i>
+        <p>Geen activiteiten gevonden.</p>
+      </div>
     @endif
   </div>
   <script>
-    // Zoekbalk: filtert de kaartjes op titel en verbergt lege secties.
+    // Zoeken, sorteren en verlopen verbergen. Alles gebeurt in de browser, bij elke toetsaanslag.
     (() => {
-      const searchInput = document.getElementById('activity-search');
-      if (! searchInput) return;
+      const input = document.getElementById('activity-search');
+      if (! input) return;
 
-      searchInput.addEventListener('input', () => {
-        const query = searchInput.value.trim().toLowerCase();
+      const clearButton = document.getElementById('search-clear');
+      const chips = document.querySelectorAll('#sort-chips .chip[data-sort]');
+      const expiredToggle = document.getElementById('show-expired');
+      const noResults = document.getElementById('no-results');
+      const subtitle = document.getElementById('activity-subtitle');
+      const cards = Array.from(document.querySelectorAll('.cards .card'));
+      const isAdmin = Boolean(document.querySelector('.section-title'));
 
-        document.querySelectorAll('.cards .card').forEach((card) => {
-          const title = card.querySelector('.card-title')?.textContent.toLowerCase() ?? '';
-          card.style.display = title.includes(query) ? '' : 'none';
+      let sortKey = 'start';
+      let reversed = false;
+
+      // Hoofdletters en accenten negeren: "cafe" vindt ook "café"
+      const normalize = (text) => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      cards.forEach((card) => { card.dataset.search = normalize(card.dataset.search); });
+
+      // Activiteiten zonder datum komen altijd onderaan, ook als de volgorde is omgedraaid
+      const byNumber = (key) => (a, b) => {
+        const x = a.dataset[key];
+        const y = b.dataset[key];
+        if (x === '' && y === '') return 0;
+        if (x === '') return 1;
+        if (y === '') return -1;
+        return (Number(x) - Number(y)) * (reversed ? -1 : 1);
+      };
+      const comparers = {
+        start: byNumber('start'),
+        deadline: byNumber('deadline'),
+        title: (a, b) => a.dataset.title.localeCompare(b.dataset.title, 'nl') * (reversed ? -1 : 1),
+      };
+
+      const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+      const update = () => {
+        const query = normalize(input.value.trim());
+        const showExpired = expiredToggle?.checked ?? false;
+        clearButton.hidden = query === '';
+
+        // Filteren
+        cards.forEach((card) => {
+          const matches = card.dataset.search.includes(query);
+          const hiddenByExpiry = card.dataset.expired === '1' && ! showExpired;
+          card.hidden = ! matches || hiddenByExpiry;
         });
 
+        // Sorteren binnen elke sectie
+        document.querySelectorAll('.cards').forEach((container) => {
+          Array.from(container.children)
+            .sort(comparers[sortKey])
+            .forEach((card) => container.appendChild(card));
+        });
+
+        // Lege secties verbergen en tellers bijwerken
+        let visibleTotal = 0;
+        let visibleDrafts = 0;
         document.querySelectorAll('.section').forEach((section) => {
-          const anyVisible = Array.from(section.querySelectorAll('.card')).some((card) => card.style.display !== 'none');
-          section.style.display = anyVisible ? '' : 'none';
+          const visible = section.querySelectorAll('.card:not([hidden])');
+          section.hidden = visible.length === 0;
+          const count = section.querySelector('.count');
+          if (count) count.textContent = visible.length;
+          visibleTotal += visible.length;
+          visibleDrafts += section.querySelectorAll('.card[data-status="draft"]:not([hidden])').length;
+        });
+
+        if (noResults) noResults.hidden = visibleTotal > 0;
+
+        if (subtitle) {
+          subtitle.textContent = isAdmin
+            ? `${visibleTotal - visibleDrafts} gepubliceerd, ${plural(visibleDrafts, 'concept', 'concepten')}`
+            : plural(visibleTotal, 'activiteit', 'activiteiten');
+        }
+      };
+
+      input.addEventListener('input', update);
+      expiredToggle?.addEventListener('change', update);
+
+      clearButton.addEventListener('click', () => {
+        input.value = '';
+        input.focus();
+        update();
+      });
+
+      // Escape leegt het zoekveld
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && input.value !== '') {
+          input.value = '';
+          update();
+        }
+      });
+
+      const directionButton = document.getElementById('sort-direction');
+      directionButton?.addEventListener('click', () => {
+        reversed = ! reversed;
+        directionButton.classList.toggle('active', reversed);
+        directionButton.setAttribute('aria-pressed', reversed);
+        update();
+      });
+
+      chips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+          sortKey = chip.dataset.sort;
+          chips.forEach((other) => {
+            const active = other === chip;
+            other.classList.toggle('active', active);
+            other.setAttribute('aria-pressed', active);
+          });
+          update();
         });
       });
+
+      update();
     })();
 
     // Fotocarousel op de kaartjes: pijltjes, bolletjes en automatisch doorbladeren.
