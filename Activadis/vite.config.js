@@ -11,6 +11,7 @@ export default defineConfig({
         'resources/css/pages/activities.css',
         'resources/css/pages/activity-form.css',
         'resources/css/pages/activity-detail.css',
+        'resources/css/pages/users.css',
         'resources/js/app.js',
       ],
       refresh: true,

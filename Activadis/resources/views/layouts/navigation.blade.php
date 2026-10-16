@@ -26,6 +26,13 @@
                 Activiteit aanmaken
               </a>
             </li>
+
+            @php $onUsers = request()->routeIs('users.*'); @endphp
+            <li>
+              <a href="{{ route('users.index') }}" @class(['nav-link', 'active' => $onUsers]) {{ $onUsers ? 'aria-current=page' : '' }}>
+                Gebruikers
+              </a>
+            </li>
           @endif
         </ul>
 

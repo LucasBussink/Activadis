@@ -166,3 +166,43 @@ body {
     }
   }
 }
+
+/* Extra onderdelen voor wachtwoord vergeten, resetten en instellen */
+body .login-page .login-panel .login-panel-inner {
+  .intro {
+    margin: -8px 0 24px;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    line-height: 1.5;
+
+    strong {
+      color: var(--color-text);
+    }
+  }
+
+  .status-message.error {
+    background-color: rgba(214, 69, 69, 0.08);
+    color: var(--color-error);
+  }
+
+  .field .hint {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    transition: 0.2s;
+
+    &:hover {
+      color: var(--color-brand-primary-dark);
+    }
+  }
+}

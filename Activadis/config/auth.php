@@ -99,6 +99,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Uitnodigingen voor nieuwe gebruikers: de link is 28 dagen geldig (in minuten)
+        'invites' => [
+            'provider' => 'users',
+            'table' => 'user_invite_tokens',
+            'expire' => 40320,
+            'throttle' => 60,
+        ],
     ],
 
     /*
