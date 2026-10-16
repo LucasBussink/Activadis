@@ -9,7 +9,7 @@
 
 body {
   .activity-detail-page {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 40px 24px 80px;
 
@@ -622,6 +622,68 @@ body {
       }
     }
 
+    /* Gegevens bij je inschrijving: +1 en dieetwensen */
+    .signup-box .extras-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .signup-box .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text);
+
+        .optional {
+          font-weight: 400;
+          color: var(--color-text-secondary);
+        }
+      }
+
+      textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background-color: var(--color-surface);
+        box-shadow: none;
+        color: var(--color-text);
+        font: inherit;
+        font-size: 14px;
+        resize: vertical;
+
+        &:focus {
+          outline: none;
+          border-color: var(--color-brand-primary);
+          box-shadow: 0 0 0 3px rgba(250, 162, 27, 0.25);
+        }
+
+        &.has-error {
+          border-color: var(--color-error);
+        }
+      }
+
+      .field-error {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-error);
+      }
+
+      .hint {
+        text-align: left;
+      }
+    }
+
+    .signup-box .btn-secondary.save:hover {
+      border-color: var(--color-brand-primary);
+      color: var(--color-brand-primary-dark);
+    }
+
     .partner-badge {
       margin-left: 6px;
       padding: 1px 8px;
@@ -714,6 +776,18 @@ body {
           font-size: 14px;
           font-weight: 600;
           color: var(--color-text);
+        }
+
+        .diet {
+          display: flex;
+          gap: 6px;
+          margin-top: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.4;
+          color: var(--color-accent-text);
+          white-space: pre-line;
+          overflow-wrap: anywhere;
         }
 
         .email {

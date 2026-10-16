@@ -233,4 +233,111 @@ class SignupTest extends TestCase
             ->get(route('activities.show', $activity))
             ->assertDontSee('partner-badge', false);
     }
+
+    public function test_a_user_can_sign_up_with_dietary_notes(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true]);
+
+        $this->actingAs($user)
+            ->post(route('activities.signup', $activity), ['dietary_notes' => '  Notenallergie  '])
+            ->assertSessionHas('status');
+
+        $this->assertSame('Notenallergie', $activity->signups()->first()->dietary_notes);
+    }
+
+    public function test_dietary_notes_are_ignored_when_there_is_no_food(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => false]);
+
+        $this->actingAs($user)
+            ->post(route('activities.signup', $activity), ['dietary_notes' => 'Vegetarisch']);
+
+        $this->assertNull($activity->signups()->first()->dietary_notes);
+    }
+
+    public function test_dietary_notes_cannot_be_longer_than_500_characters(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true]);
+
+        $this->actingAs($user)
+            ->post(route('activities.signup', $activity), ['dietary_notes' => str_repeat('a', 501)])
+            ->assertSessionHasErrors('dietary_notes');
+
+        $this->assertFalse($activity->isUserSignedUp($user));
+    }
+
+    public function test_dietary_notes_can_be_changed_and_cleared_after_signing_up(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true]);
+        $activity->addUser($user, false, 'Vegetarisch');
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['dietary_notes' => 'Veganistisch'])
+            ->assertSessionHas('status');
+        $this->assertSame('Veganistisch', $activity->signups()->first()->dietary_notes);
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['dietary_notes' => ''])
+            ->assertSessionHas('status');
+        $this->assertNull($activity->signups()->first()->dietary_notes);
+    }
+
+    public function test_saving_without_the_notes_field_keeps_the_notes(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true, 'allow_partner' => true]);
+        $activity->addUser($user, false, 'Vegetarisch');
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['brings_partner' => '1']);
+
+        $this->assertSame('Vegetarisch', $activity->signups()->first()->dietary_notes);
+    }
+
+    public function test_saving_an_unchanged_form_still_works(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true]);
+        $activity->addUser($user, false, 'Vegetarisch');
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['dietary_notes' => 'Vegetarisch'])
+            ->assertSessionHas('status')
+            ->assertSessionMissing('error');
+    }
+
+    public function test_dietary_notes_cannot_be_changed_after_the_deadline(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true]);
+        $activity->addUser($user, false, 'Vegetarisch');
+        $activity->update(['signup_deadline' => now()->subDay()]);
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['dietary_notes' => 'Veganistisch'])
+            ->assertSessionHas('error');
+
+        $this->assertSame('Vegetarisch', $activity->signups()->first()->dietary_notes);
+    }
+
+    public function test_only_the_admin_sees_the_dietary_notes_of_others(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $activity = $this->openActivity(['includes_food' => true]);
+        $activity->addUser($user, false, 'Pindanotenallergie');
+
+        $this->actingAs($admin)
+            ->get(route('activities.show', $activity))
+            ->assertSee('Pindanotenallergie');
+
+        $this->actingAs($other)
+            ->get(route('activities.show', $activity))
+            ->assertDontSee('Pindanotenallergie');
+    }
 }

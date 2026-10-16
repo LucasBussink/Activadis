@@ -17,6 +17,11 @@ class SignupController extends Controller
 
         $user = $request->user();
 
+        $data = $request->validate([
+            'brings_partner' => ['nullable', 'boolean'],
+            'dietary_notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
         if ($activity->isUserSignedUp($user)) {
             return back()->with('status', 'Je bent al ingeschreven.');
         }
@@ -35,17 +40,22 @@ class SignupController extends Controller
             return back()->with('error', 'Bij deze activiteit mag je geen +1 meenemen.');
         }
 
-        $activity->addUser($user, $withPartner);
+        $activity->addUser($user, $withPartner, $data['dietary_notes'] ?? null);
 
         return back()->with('status', $withPartner ? 'Je bent ingeschreven, met een +1!' : 'Je bent ingeschreven!');
     }
 
     /**
-     * Zet een +1 aan of uit voor je bestaande inschrijving.
+     * Pas je +1 en dieetwensen aan.
      */
     public function update(Request $request, Activity $activity): RedirectResponse
     {
         abort_if($activity->status === Activity::STATUS_DRAFT, 404);
+
+        $data = $request->validate([
+            'brings_partner' => ['nullable', 'boolean'],
+            'dietary_notes' => ['nullable', 'string', 'max:500'],
+        ]);
 
         $withPartner = $request->boolean('brings_partner');
 
@@ -53,11 +63,14 @@ class SignupController extends Controller
             return back()->with('error', 'Je bent niet ingeschreven voor deze activiteit.');
         }
 
-        if (! $activity->setPartner($request->user(), $withPartner)) {
-            return back()->with('error', 'Je +1 kan niet meer worden aangepast.');
+        // Dieetwensen alleen aanpassen als het veld is meegestuurd
+        $changeNotes = $request->exists('dietary_notes');
+
+        if (! $activity->updateSignup($request->user(), $withPartner, $data['dietary_notes'] ?? null, $changeNotes)) {
+            return back()->with('error', 'Je inschrijving kan niet meer worden aangepast.');
         }
 
-        return back()->with('status', $withPartner ? 'Je +1 is toegevoegd.' : 'Je +1 is weggehaald.');
+        return back()->with('status', 'Je gegevens zijn opgeslagen.');
     }
 
     /**

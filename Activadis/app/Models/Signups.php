@@ -10,6 +10,7 @@ class Signups extends Model
         'user_id',
         'activity_id',
         'brings_partner',
+        'dietary_notes',
     ];
 
     protected function casts(): array

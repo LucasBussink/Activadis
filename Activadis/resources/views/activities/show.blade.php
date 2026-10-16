@@ -65,6 +65,7 @@
   $images = $activity->images;
   $mySignup = $activity->signups->firstWhere('user_id', auth()->id());
   $partnerCount = $activity->signups->where('brings_partner', true)->count();
+  $dietCount = $activity->signups->filter(fn ($signup) => filled($signup->dietary_notes))->count();
 
   if ($activity->personal_contribution === null) {
       $contributionText = '—';
@@ -202,6 +203,9 @@
               @if ($partnerCount > 0)
                 <span class="count partners">+ {{ $partnerCount }} {{ $partnerCount === 1 ? 'partner' : 'partners' }}</span>
               @endif
+              @if ($dietCount > 0)
+                <span class="count partners">{{ $dietCount }} {{ $dietCount === 1 ? 'dieetwens' : 'dieetwensen' }}</span>
+              @endif
             </h2>
 
             @if ($activity->signups->isEmpty())
@@ -219,6 +223,9 @@
                         @endif
                       </p>
                       <p class="email">{{ $signup->user->email }}</p>
+                      @if (filled($signup->dietary_notes))
+                        <p class="diet"><i class="bi bi-cup-hot"></i> {{ $signup->dietary_notes }}</p>
+                      @endif
                     </div>
                   </li>
                 @endforeach
@@ -302,18 +309,39 @@
                 </div>
               </div>
 
-              @if ($activity->allow_partner)
+              @if ($activity->allow_partner || $activity->includes_food)
                 @if ($signupOpen)
-                  <form method="POST" action="{{ route('activities.signup.update', $activity) }}">
+                  <form method="POST" action="{{ route('activities.signup.update', $activity) }}" class="extras-form">
                     @csrf
                     @method('PATCH')
-                    <label class="partner-toggle">
-                      <input type="checkbox" name="brings_partner" value="1" @checked($mySignup?->brings_partner) onchange="this.form.submit()">
-                      <span>Ik neem een +1 mee</span>
-                    </label>
+
+                    @if ($activity->allow_partner)
+                      <label class="partner-toggle">
+                        <input type="checkbox" name="brings_partner" value="1" @checked(old('brings_partner', $mySignup?->brings_partner))>
+                        <span>Ik neem een +1 mee</span>
+                      </label>
+                    @endif
+
+                    @if ($activity->includes_food)
+                      <div class="field">
+                        <label for="dietary_notes">Dieetwensen of allergieën</label>
+                        <textarea id="dietary_notes" name="dietary_notes" rows="3" maxlength="500" placeholder="Bijvoorbeeld vegetarisch, notenallergie. Ook voor je +1." @class(['has-error' => $errors->has('dietary_notes')])>{{ old('dietary_notes', $mySignup?->dietary_notes) }}</textarea>
+                        @error('dietary_notes')
+                          <p class="field-error">{{ $message }}</p>
+                        @enderror
+                        <p class="hint">Alleen zichtbaar voor de organisatie.</p>
+                      </div>
+                    @endif
+
+                    <button type="submit" class="btn-secondary save"><i class="bi bi-check-lg"></i> Opslaan</button>
                   </form>
-                @elseif ($mySignup?->brings_partner)
-                  <p class="hint"><i class="bi bi-person-plus"></i> Je neemt een +1 mee.</p>
+                @else
+                  @if ($mySignup?->brings_partner)
+                    <p class="hint"><i class="bi bi-person-plus"></i> Je neemt een +1 mee.</p>
+                  @endif
+                  @if ($activity->includes_food && $mySignup?->dietary_notes)
+                    <p class="hint"><i class="bi bi-cup-hot"></i> Je dieetwensen: {{ $mySignup->dietary_notes }}</p>
+                  @endif
                 @endif
               @endif
 
@@ -334,6 +362,16 @@
                     <input type="checkbox" name="brings_partner" value="1" @checked(old('brings_partner'))>
                     <span>Ik neem een +1 mee</span>
                   </label>
+                @endif
+                @if ($activity->includes_food)
+                  <div class="field">
+                    <label for="dietary_notes">Dieetwensen of allergieën <span class="optional">(optioneel)</span></label>
+                    <textarea id="dietary_notes" name="dietary_notes" rows="3" maxlength="500" placeholder="Bijvoorbeeld vegetarisch, notenallergie. Ook voor je +1." @class(['has-error' => $errors->has('dietary_notes')])>{{ old('dietary_notes') }}</textarea>
+                    @error('dietary_notes')
+                      <p class="field-error">{{ $message }}</p>
+                    @enderror
+                    <p class="hint">Alleen zichtbaar voor de organisatie.</p>
+                  </div>
                 @endif
                 <button type="submit" class="btn-primary"><i class="bi bi-person-plus"></i> Inschrijven</button>
               </form>
