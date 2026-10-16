@@ -133,4 +133,104 @@ class SignupTest extends TestCase
             ->get(route('activities.index'))
             ->assertSee('Ingeschreven</span>', false);
     }
+
+    public function test_a_user_can_sign_up_with_a_partner(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['allow_partner' => true]);
+
+        $this->actingAs($user)
+            ->post(route('activities.signup', $activity), ['brings_partner' => '1'])
+            ->assertSessionHas('status');
+
+        $this->assertTrue($activity->signups()->where('user_id', $user->id)->first()->brings_partner);
+    }
+
+    public function test_a_partner_is_not_allowed_when_the_activity_does_not_allow_it(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['allow_partner' => false]);
+
+        $this->actingAs($user)
+            ->post(route('activities.signup', $activity), ['brings_partner' => '1'])
+            ->assertSessionHas('error');
+
+        $this->assertFalse($activity->isUserSignedUp($user));
+    }
+
+    public function test_a_partner_does_not_count_towards_the_maximum(): void
+    {
+        $activity = $this->openActivity(['allow_partner' => true, 'max_participants' => 2]);
+        $activity->addUser(User::factory()->create(), true);
+
+        $this->assertFalse($activity->isFull());
+
+        $activity->addUser(User::factory()->create(), true);
+
+        $this->assertTrue($activity->isFull());
+        $this->assertSame(2, $activity->getSignedUpUserCount());
+    }
+
+    public function test_a_user_can_add_and_remove_a_partner_after_signing_up(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['allow_partner' => true]);
+        $activity->addUser($user);
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['brings_partner' => '1'])
+            ->assertSessionHas('status');
+        $this->assertTrue($activity->signups()->first()->brings_partner);
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity))
+            ->assertSessionHas('status');
+        $this->assertFalse($activity->signups()->first()->brings_partner);
+    }
+
+    public function test_a_partner_cannot_be_changed_after_the_deadline(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['allow_partner' => true]);
+        $activity->addUser($user);
+        $activity->update(['signup_deadline' => now()->subDay()]);
+
+        $this->actingAs($user)
+            ->patch(route('activities.signup.update', $activity), ['brings_partner' => '1'])
+            ->assertSessionHas('error');
+
+        $this->assertFalse($activity->signups()->first()->brings_partner);
+    }
+
+    public function test_a_user_cannot_sign_up_after_the_activity_has_ended(): void
+    {
+        $user = User::factory()->create();
+        $activity = $this->openActivity([
+            'signup_deadline' => null,
+            'starts_at' => now()->subDays(2),
+            'ends_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('activities.signup', $activity))
+            ->assertSessionHas('error');
+
+        $this->assertFalse($activity->isUserSignedUp($user));
+    }
+
+    public function test_only_the_admin_sees_who_brings_a_partner(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $user = User::factory()->create();
+        $activity = $this->openActivity(['allow_partner' => true]);
+        $activity->addUser($user, true);
+
+        $this->actingAs($admin)
+            ->get(route('activities.show', $activity))
+            ->assertSee('partner-badge', false);
+
+        $this->actingAs($user)
+            ->get(route('activities.show', $activity))
+            ->assertDontSee('partner-badge', false);
+    }
 }
