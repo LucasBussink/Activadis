@@ -63,7 +63,7 @@ class Activity extends Model
     /**
      * Schrijf een gebruiker in. Geeft null terug als dat niet (meer) kan.
      */
-    public function addUser(User $user, bool $withPartner = false): ?Signups
+    public function addUser(User $user, bool $withPartner = false, ?string $dietaryNotes = null): ?Signups
     {
         if (! $this->isSignupOpen() || $this->isFull() || $this->isUserSignedUp($user)) {
             return null;
@@ -73,6 +73,7 @@ class Activity extends Model
             'user_id' => $user->id,
             // Een +1 kan alleen bij activiteiten die dat toestaan
             'brings_partner' => $withPartner && $this->allow_partner,
+            'dietary_notes' => $this->cleanDietaryNotes($dietaryNotes),
         ]);
     }
 
@@ -81,11 +82,39 @@ class Activity extends Model
      */
     public function setPartner(User $user, bool $withPartner): bool
     {
+        return $this->updateSignup($user, $withPartner);
+    }
+
+    /**
+     * Pas de +1 en (optioneel) de dieetwensen van een bestaande inschrijving aan.
+     * Zonder $dietaryNotes blijven de dieetwensen zoals ze waren. Geeft false terug als dat niet (meer) kan.
+     */
+    public function updateSignup(User $user, bool $withPartner, ?string $dietaryNotes = null, bool $changeNotes = false): bool
+    {
         if (! $this->isSignupOpen() || ($withPartner && ! $this->allow_partner)) {
             return false;
         }
 
-        return $this->signups()->where('user_id', $user->id)->update(['brings_partner' => $withPartner]) > 0;
+        $attributes = ['brings_partner' => $withPartner];
+
+        if ($changeNotes) {
+            $attributes['dietary_notes'] = $this->cleanDietaryNotes($dietaryNotes);
+        }
+
+        // Het aantal gewijzigde rijen telt hier niet mee: bij een ongewijzigd formulier is dat 0
+        $this->signups()->where('user_id', $user->id)->update($attributes);
+
+        return true;
+    }
+
+    /**
+     * Dieetwensen bestaan alleen bij activiteiten met eten, en een leeg veld wordt niets.
+     */
+    private function cleanDietaryNotes(?string $notes): ?string
+    {
+        $notes = trim((string) $notes);
+
+        return $this->includes_food && $notes !== '' ? $notes : null;
     }
 
     /**
