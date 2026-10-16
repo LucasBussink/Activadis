@@ -622,13 +622,51 @@ body {
       }
     }
 
-    /* Gegevens bij je inschrijving: +1 en dieetwensen */
-    .signup-box .extras-form {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    [hidden] {
+      display: none !important;
     }
 
+    /* Bezetting en inschrijfblok (Livewire) */
+    .signup-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .signup-box .notice {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background-color: var(--color-success-bg);
+      color: var(--color-success);
+      font-size: 13px;
+      font-weight: 600;
+      /* Verdwijnt na een paar seconden zonder JavaScript */
+      animation: notice-out 0.4s ease 4s forwards;
+
+      &.error {
+        background-color: rgba(214, 69, 69, 0.08);
+        color: var(--color-error);
+        animation-delay: 7s;
+      }
+    }
+
+    .signup-box .save-status {
+      min-height: 18px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+
+      .saved {
+        color: var(--color-success);
+        font-weight: 600;
+        animation: notice-out 0.4s ease 2.5s forwards;
+      }
+    }
+
+    /* Gegevens bij je inschrijving: +1 en dieetwensen */
     .signup-box .field {
       display: flex;
       flex-direction: column;
@@ -828,5 +866,14 @@ body {
         padding: 20px;
       }
     }
+  }
+}
+
+/* Laat een melding na een paar seconden verdwijnen (moet op het hoogste niveau staan, niet genest) */
+@keyframes notice-out {
+  to {
+    max-height: 0;
+    padding-block: 0;
+    opacity: 0;
   }
 }
