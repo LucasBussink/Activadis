@@ -63,6 +63,8 @@
   $spotsLeft = $max ? max($max - $registered, 0) : null;
   $percentage = $max ? min(100, (int) round($registered / $max * 100)) : 0;
   $images = $activity->images;
+  $mySignup = $activity->signups->firstWhere('user_id', auth()->id());
+  $partnerCount = $activity->signups->where('brings_partner', true)->count();
 
   if ($activity->personal_contribution === null) {
       $contributionText = '—';
@@ -197,6 +199,9 @@
             <h2>
               Ingeschreven
               <span class="count">{{ $registered }}</span>
+              @if ($partnerCount > 0)
+                <span class="count partners">+ {{ $partnerCount }} {{ $partnerCount === 1 ? 'partner' : 'partners' }}</span>
+              @endif
             </h2>
 
             @if ($activity->signups->isEmpty())
@@ -207,7 +212,12 @@
                   <li>
                     <span class="avatar">{{ mb_strtoupper(mb_substr($signup->user->name, 0, 1)) }}</span>
                     <div>
-                      <p class="name">{{ $signup->user->name }}</p>
+                      <p class="name">
+                        {{ $signup->user->name }}
+                        @if ($signup->brings_partner)
+                          <span class="partner-badge">+1</span>
+                        @endif
+                      </p>
                       <p class="email">{{ $signup->user->email }}</p>
                     </div>
                   </li>
@@ -292,6 +302,21 @@
                 </div>
               </div>
 
+              @if ($activity->allow_partner)
+                @if ($signupOpen)
+                  <form method="POST" action="{{ route('activities.signup.update', $activity) }}">
+                    @csrf
+                    @method('PATCH')
+                    <label class="partner-toggle">
+                      <input type="checkbox" name="brings_partner" value="1" @checked($mySignup?->brings_partner) onchange="this.form.submit()">
+                      <span>Ik neem een +1 mee</span>
+                    </label>
+                  </form>
+                @elseif ($mySignup?->brings_partner)
+                  <p class="hint"><i class="bi bi-person-plus"></i> Je neemt een +1 mee.</p>
+                @endif
+              @endif
+
               @if ($signupOpen)
                 <form method="POST" action="{{ route('activities.signoff', $activity) }}">
                   @csrf
@@ -304,6 +329,12 @@
             @elseif ($signupState === 'open')
               <form method="POST" action="{{ route('activities.signup', $activity) }}">
                 @csrf
+                @if ($activity->allow_partner)
+                  <label class="partner-toggle">
+                    <input type="checkbox" name="brings_partner" value="1" @checked(old('brings_partner'))>
+                    <span>Ik neem een +1 mee</span>
+                  </label>
+                @endif
                 <button type="submit" class="btn-primary"><i class="bi bi-person-plus"></i> Inschrijven</button>
               </form>
               @if ($deadline)

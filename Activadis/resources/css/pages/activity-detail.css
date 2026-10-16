@@ -563,6 +563,75 @@ body {
       }
     }
 
+    /* Schuifknop voor een +1 bij het inschrijven */
+    .partner-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text);
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        appearance: none;
+        position: relative;
+        flex-shrink: 0;
+        width: 44px;
+        height: 26px;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 100px;
+        background-color: #c5cad3;
+        background-image: none;
+        color: transparent;
+        cursor: pointer;
+        transition: background-color 0.2s;
+
+        &::after {
+          content: "";
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background-color: #fff;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+          transition: transform 0.2s;
+        }
+
+        &:checked {
+          background-color: var(--color-brand-primary);
+          background-image: none;
+
+          &::after {
+            transform: translateX(18px);
+          }
+        }
+
+        &:focus {
+          outline: none;
+          box-shadow: none;
+        }
+
+        &:focus-visible {
+          box-shadow: 0 0 0 3px rgba(250, 162, 27, 0.35);
+        }
+      }
+    }
+
+    .partner-badge {
+      margin-left: 6px;
+      padding: 1px 8px;
+      border-radius: 100px;
+      background-color: rgba(250, 162, 27, 0.15);
+      color: var(--color-accent-text);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
     /* Knoppen, zelfde stijl als op het overzicht en het formulier */
     .btn-primary,
     .btn-secondary {
