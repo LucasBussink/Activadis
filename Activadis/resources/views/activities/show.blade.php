@@ -45,25 +45,11 @@
       ? 'Nog ' . $deadline->diffForHumans(['parts' => 1, 'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])
       : null;
   $isDraft = $activity->status === \App\Models\Activity::STATUS_DRAFT;
-  $ended = $activity->hasEnded();
-  $signupOpen = !$isDraft && !$deadlineClosed && !$ended;
   $registered = $activity->signups_count;
   $max = $activity->max_participants;
   $isFull = $max && $registered >= $max;
 
-  //* Eén toestand voor het inschrijfblok: ingeschreven, open, vol, gesloten of concept
-  $signupState = match (true) {
-      $isSignedUp => 'signed-up',
-      $isDraft => 'draft',
-      $ended => 'ended',
-      $deadlineClosed => 'closed',
-      $isFull => 'full',
-      default => 'open',
-  };
-  $spotsLeft = $max ? max($max - $registered, 0) : null;
-  $percentage = $max ? min(100, (int) round($registered / $max * 100)) : 0;
   $images = $activity->images;
-  $mySignup = $activity->signups->firstWhere('user_id', auth()->id());
   $partnerCount = $activity->signups->where('brings_partner', true)->count();
   $dietCount = $activity->signups->filter(fn ($signup) => filled($signup->dietary_notes))->count();
 
@@ -89,11 +75,8 @@
         @if ($isDraft)
           <span class="status-pill">Concept</span>
         @endif
-        @if ($isSignedUp)
-          <span class="status-pill signed-up"><i class="bi bi-check-lg"></i> Ingeschreven</span>
-        @elseif ($isFull)
-          <span class="status-pill full">Vol</span>
-        @endif
+        <span class="status-pill signed-up" data-pill="signed-up" @if (! $isSignedUp) hidden @endif><i class="bi bi-check-lg"></i> Ingeschreven</span>
+        <span class="status-pill full" data-pill="full" @if (! $isFull || $isSignedUp) hidden @endif>Vol</span>
 
         @if (auth()->user()?->isAdmin())
           <a href="{{ route('activities.edit', $activity) }}" class="edit-link">
@@ -276,144 +259,22 @@
           </ul>
 
 
-          {{-- Bezetting --}}
-          <div class="capacity">
-            <div class="capacity-header">
-              <span><i class="bi bi-people"></i> Deelnemers</span>
-              <strong>{{ $registered }}{{ $max ? '/' . $max : '' }}</strong>
-            </div>
-
-            @if ($max)
-              <div @class(['bar', 'full' => $isFull])>
-                <span style="width: {{ $percentage }}%"></span>
-              </div>
-              <p class="hint">
-                {{ $isFull ? 'Deze activiteit is vol.' : $spotsLeft . ' ' . ($spotsLeft === 1 ? 'plek' : 'plekken') . ' over' }}
-                @if ($activity->min_participants)
-                  · minimaal {{ $activity->min_participants }} nodig
-                @endif
-              </p>
-            @elseif ($activity->min_participants)
-              <p class="hint">Minimaal {{ $activity->min_participants }} nodig</p>
-            @endif
-          </div>
-
-          {{-- Inschrijven / uitschrijven --}}
-          <div class="signup-box {{ $signupState }}">
-            @if ($signupState === 'signed-up')
-              <div class="signup-state">
-                <i class="bi bi-check-circle-fill"></i>
-                <div>
-                  <p class="state-title">Je bent ingeschreven</p>
-                  <p class="state-text">Je plek is gereserveerd. Tot dan!</p>
-                </div>
-              </div>
-
-              @if ($activity->allow_partner || $activity->includes_food)
-                @if ($signupOpen)
-                  <form method="POST" action="{{ route('activities.signup.update', $activity) }}" class="extras-form">
-                    @csrf
-                    @method('PATCH')
-
-                    @if ($activity->allow_partner)
-                      <label class="partner-toggle">
-                        <input type="checkbox" name="brings_partner" value="1" @checked(old('brings_partner', $mySignup?->brings_partner))>
-                        <span>Ik neem een +1 mee</span>
-                      </label>
-                    @endif
-
-                    @if ($activity->includes_food)
-                      <div class="field">
-                        <label for="dietary_notes">Dieetwensen of allergieën</label>
-                        <textarea id="dietary_notes" name="dietary_notes" rows="3" maxlength="500" placeholder="Bijvoorbeeld vegetarisch, notenallergie. Ook voor je +1." @class(['has-error' => $errors->has('dietary_notes')])>{{ old('dietary_notes', $mySignup?->dietary_notes) }}</textarea>
-                        @error('dietary_notes')
-                          <p class="field-error">{{ $message }}</p>
-                        @enderror
-                        <p class="hint">Alleen zichtbaar voor de organisatie.</p>
-                      </div>
-                    @endif
-
-                    <button type="submit" class="btn-secondary save"><i class="bi bi-check-lg"></i> Opslaan</button>
-                  </form>
-                @else
-                  @if ($mySignup?->brings_partner)
-                    <p class="hint"><i class="bi bi-person-plus"></i> Je neemt een +1 mee.</p>
-                  @endif
-                  @if ($activity->includes_food && $mySignup?->dietary_notes)
-                    <p class="hint"><i class="bi bi-cup-hot"></i> Je dieetwensen: {{ $mySignup->dietary_notes }}</p>
-                  @endif
-                @endif
-              @endif
-
-              @if ($signupOpen)
-                <form method="POST" action="{{ route('activities.signoff', $activity) }}">
-                  @csrf
-                  @method('DELETE')
-                  <button type="submit" class="btn-secondary"><i class="bi bi-x-lg"></i> Uitschrijven</button>
-                </form>
-              @else
-                <p class="hint">Uitschrijven kan niet meer, de inschrijving is gesloten.</p>
-              @endif
-            @elseif ($signupState === 'open')
-              <form method="POST" action="{{ route('activities.signup', $activity) }}">
-                @csrf
-                @if ($activity->allow_partner)
-                  <label class="partner-toggle">
-                    <input type="checkbox" name="brings_partner" value="1" @checked(old('brings_partner'))>
-                    <span>Ik neem een +1 mee</span>
-                  </label>
-                @endif
-                @if ($activity->includes_food)
-                  <div class="field">
-                    <label for="dietary_notes">Dieetwensen of allergieën <span class="optional">(optioneel)</span></label>
-                    <textarea id="dietary_notes" name="dietary_notes" rows="3" maxlength="500" placeholder="Bijvoorbeeld vegetarisch, notenallergie. Ook voor je +1." @class(['has-error' => $errors->has('dietary_notes')])>{{ old('dietary_notes') }}</textarea>
-                    @error('dietary_notes')
-                      <p class="field-error">{{ $message }}</p>
-                    @enderror
-                    <p class="hint">Alleen zichtbaar voor de organisatie.</p>
-                  </div>
-                @endif
-                <button type="submit" class="btn-primary"><i class="bi bi-person-plus"></i> Inschrijven</button>
-              </form>
-              @if ($deadline)
-                <p class="hint">Inschrijven kan tot {{ $deadline->isoFormat('D MMMM, HH:mm') }}</p>
-              @endif
-            @else
-              <div class="signup-state">
-                <i @class([
-                    'bi',
-                    'bi-pencil-square' => $signupState === 'draft',
-                    'bi-lock-fill' => $signupState === 'closed',
-                    'bi-calendar-check' => $signupState === 'ended',
-                    'bi-x-circle-fill' => $signupState === 'full',
-                ])></i>
-                <div>
-                  <p class="state-title">
-                    {{ match ($signupState) {
-                        'draft' => 'Nog niet open',
-                        'ended' => 'Activiteit is geweest',
-                        'closed' => 'Inschrijving gesloten',
-                        'full' => 'Activiteit is vol',
-                    } }}
-                  </p>
-                  <p class="state-text">
-                    {{ match ($signupState) {
-                        'draft' => 'Dit is een concept. Inschrijven kan na publiceren.',
-                        'ended' => 'Inschrijven kan niet meer.',
-                        'closed' => 'De deadline om in te schrijven is verstreken.',
-                        'full' => 'Alle plekken zijn bezet.',
-                    } }}
-                  </p>
-                </div>
-              </div>
-            @endif
-          </div>
+          {{-- Bezetting en inschrijven, zonder de pagina te herladen --}}
+          <livewire:signup-panel :activity="$activity" />
         </section>
       </aside>
     </div>
   </div>
 
   <script>
+    // Het inschrijfblok (Livewire) meldt als je bent in- of uitgeschreven, zodat de labels bij de titel meegaan
+    document.addEventListener('livewire:init', () => {
+      Livewire.on('signup-changed', ({ signedUp, full }) => {
+        document.querySelector('[data-pill="signed-up"]')?.toggleAttribute('hidden', ! signedUp);
+        document.querySelector('[data-pill="full"]')?.toggleAttribute('hidden', ! full || signedUp);
+      });
+    });
+
     // Fotocarousel: pijltjes en bolletjes. Swipen werkt via scroll-snap in de CSS.
     (() => {
       const carousel = document.querySelector('[data-carousel]');
