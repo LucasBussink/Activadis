@@ -63,7 +63,7 @@ class Activity extends Model
     /**
      * Schrijf een gebruiker in. Geeft null terug als dat niet (meer) kan.
      */
-    public function addUser(User $user): ?Signups
+    public function addUser(User $user, bool $withPartner = false): ?Signups
     {
         if (! $this->isSignupOpen() || $this->isFull() || $this->isUserSignedUp($user)) {
             return null;
@@ -71,7 +71,21 @@ class Activity extends Model
 
         return $this->signups()->create([
             'user_id' => $user->id,
+            // Een +1 kan alleen bij activiteiten die dat toestaan
+            'brings_partner' => $withPartner && $this->allow_partner,
         ]);
+    }
+
+    /**
+     * Zet een +1 aan of uit voor een bestaande inschrijving. Geeft false terug als dat niet (meer) kan.
+     */
+    public function setPartner(User $user, bool $withPartner): bool
+    {
+        if (! $this->isSignupOpen() || ($withPartner && ! $this->allow_partner)) {
+            return false;
+        }
+
+        return $this->signups()->where('user_id', $user->id)->update(['brings_partner' => $withPartner]) > 0;
     }
 
     /**
