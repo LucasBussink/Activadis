@@ -110,14 +110,15 @@ class StoreActivityTest extends TestCase
             ->assertSessionDoesntHaveErrors(['ends_at', 'signup_deadline']);
     }
 
-    public function test_the_index_shows_a_dash_for_empty_draft_fields(): void
+    public function test_the_index_shows_placeholders_for_empty_draft_fields(): void
     {
         Activity::create(['status' => Activity::STATUS_DRAFT]);
 
         $this->get(route('activities.index'))
             ->assertOk()
-            ->assertSee('Naamloos concept')
-            ->assertSee('—')
+            ->assertSee('Naamloze activiteit')
+            ->assertSee('Datum volgt')
+            ->assertSee('Geen inschrijfdeadline')
             ->assertDontSee('Gratis');
     }
 }

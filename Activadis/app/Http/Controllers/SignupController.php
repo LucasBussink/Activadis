@@ -29,9 +29,35 @@ class SignupController extends Controller
             return back()->with('error', 'Deze activiteit is helaas vol.');
         }
 
-        $activity->addUser($user);
+        $withPartner = $request->boolean('brings_partner');
 
-        return back()->with('status', 'Je bent ingeschreven!');
+        if ($withPartner && ! $activity->allow_partner) {
+            return back()->with('error', 'Bij deze activiteit mag je geen +1 meenemen.');
+        }
+
+        $activity->addUser($user, $withPartner);
+
+        return back()->with('status', $withPartner ? 'Je bent ingeschreven, met een +1!' : 'Je bent ingeschreven!');
+    }
+
+    /**
+     * Zet een +1 aan of uit voor je bestaande inschrijving.
+     */
+    public function update(Request $request, Activity $activity): RedirectResponse
+    {
+        abort_if($activity->status === Activity::STATUS_DRAFT, 404);
+
+        $withPartner = $request->boolean('brings_partner');
+
+        if (! $activity->isUserSignedUp($request->user())) {
+            return back()->with('error', 'Je bent niet ingeschreven voor deze activiteit.');
+        }
+
+        if (! $activity->setPartner($request->user(), $withPartner)) {
+            return back()->with('error', 'Je +1 kan niet meer worden aangepast.');
+        }
+
+        return back()->with('status', $withPartner ? 'Je +1 is toegevoegd.' : 'Je +1 is weggehaald.');
     }
 
     /**

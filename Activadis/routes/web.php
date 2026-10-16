@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('activities', ActivityController::class)->only(['index', 'show']);
 
     Route::post('/activities/{activity}/signup', [SignupController::class, 'store'])->name('activities.signup');
+    Route::patch('/activities/{activity}/signup', [SignupController::class, 'update'])->name('activities.signup.update');
     Route::delete('/activities/{activity}/signup', [SignupController::class, 'destroy'])->name('activities.signoff');
 });
 

@@ -63,7 +63,7 @@ class Activity extends Model
     /**
      * Schrijf een gebruiker in. Geeft null terug als dat niet (meer) kan.
      */
-    public function addUser(User $user): ?Signups
+    public function addUser(User $user, bool $withPartner = false): ?Signups
     {
         if (! $this->isSignupOpen() || $this->isFull() || $this->isUserSignedUp($user)) {
             return null;
@@ -71,7 +71,21 @@ class Activity extends Model
 
         return $this->signups()->create([
             'user_id' => $user->id,
+            // Een +1 kan alleen bij activiteiten die dat toestaan
+            'brings_partner' => $withPartner && $this->allow_partner,
         ]);
+    }
+
+    /**
+     * Zet een +1 aan of uit voor een bestaande inschrijving. Geeft false terug als dat niet (meer) kan.
+     */
+    public function setPartner(User $user, bool $withPartner): bool
+    {
+        if (! $this->isSignupOpen() || ($withPartner && ! $this->allow_partner)) {
+            return false;
+        }
+
+        return $this->signups()->where('user_id', $user->id)->update(['brings_partner' => $withPartner]) > 0;
     }
 
     /**
@@ -87,12 +101,24 @@ class Activity extends Model
     }
 
     /**
-     * In- en uitschrijven kan alleen bij een gepubliceerde activiteit waarvan de deadline nog niet voorbij is.
+     * In- en uitschrijven kan alleen bij een gepubliceerde activiteit waarvan de deadline nog niet voorbij is en die nog niet is afgelopen.
      */
     public function isSignupOpen(): bool
     {
         return $this->status === self::STATUS_PUBLISHED
-          && ($this->signup_deadline === null || $this->signup_deadline->isFuture());
+          && ($this->signup_deadline === null || $this->signup_deadline->isFuture())
+          && ! $this->hasEnded();
+    }
+
+    /**
+     * Een activiteit is afgelopen als het einde (of anders het begin) in het verleden ligt.
+     * Zonder datum is hij nog niet ingepland, dus ook niet afgelopen.
+     */
+    public function hasEnded(): bool
+    {
+        $end = $this->ends_at ?? $this->starts_at;
+
+        return $end !== null && \Illuminate\Support\Carbon::parse($end)->isPast();
     }
 
     public function isFull(): bool

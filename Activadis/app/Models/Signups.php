@@ -9,7 +9,15 @@ class Signups extends Model
     protected $fillable = [
         'user_id',
         'activity_id',
+        'brings_partner',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'brings_partner' => 'boolean',
+        ];
+    }
 
     public function user()
     {
