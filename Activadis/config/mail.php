@@ -115,4 +115,21 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | Het thema bepaalt de kleuren van onze mails. Het staat in
+    | resources/views/vendor/mail/html/themes/activadis.css.
+    |
+    */
+
+    'markdown' => [
+        'theme' => 'activadis',
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];

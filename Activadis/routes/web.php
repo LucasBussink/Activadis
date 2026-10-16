@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SignupController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/activities/{activity}/signup', [SignupController::class, 'store'])->name('activities.signup');
     Route::patch('/activities/{activity}/signup', [SignupController::class, 'update'])->name('activities.signup.update');
     Route::delete('/activities/{activity}/signup', [SignupController::class, 'destroy'])->name('activities.signoff');
+
+    // Gebruikersbeheer, alleen voor beheerders
+    Route::middleware('admin')->group(function () {
+        Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'destroy']);
+        Route::post('/users/{user}/invite', [UserController::class, 'resendInvite'])->name('users.invite');
+    });
 });
 
 require __DIR__.'/auth.php';
