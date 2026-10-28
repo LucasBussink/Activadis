@@ -241,6 +241,11 @@ body {
             color: #fff;
         }
 
+        .card-media .status-pill.deleted {
+            background-color: var(--color-error);
+            color: #fff;
+        }
+
         .flash {
             display: flex;
             align-items: center;

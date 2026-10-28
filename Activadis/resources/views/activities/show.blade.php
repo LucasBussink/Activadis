@@ -72,6 +72,9 @@
       <div class="title-row">
         <h1>{{ $activity->title ?? 'Naamloos concept' }}</h1>
 
+        @if ($activity->is_deleted)
+          <span class="status-pill deleted">Verwijderd</span>
+        @endif
         @if ($isDraft)
           <span class="status-pill">Concept</span>
         @endif
@@ -280,6 +283,16 @@
 
           {{-- Bezetting en inschrijven, zonder de pagina te herladen --}}
           <livewire:signup-panel :activity="$activity" />
+
+          {{-- Verwijderen, alleen voor beheerders --}}
+          @if (auth()->user()?->isAdmin() && !$activity->is_deleted)
+            <form method="POST" action="{{ route('activities.destroy', $activity) }}" class="delete-form"
+              onsubmit="return confirm('Weet je zeker dat je deze activiteit wilt verwijderen? Ingeschreven deelnemers krijgen een mail.')">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn-danger"><i class="bi bi-trash"></i> Activiteit verwijderen</button>
+            </form>
+          @endif
         </section>
       </aside>
     </div>
