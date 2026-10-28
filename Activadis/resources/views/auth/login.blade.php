@@ -48,6 +48,8 @@
 
           <button type="submit" class="btn-primary">Inloggen</button>
         </form>
+
+        <p class="external-link">Ben je extern? <a href="{{ route('external.index') }}">Bekijk de activiteiten voor externen</a></p>
       </div>
     </div>
   </div>

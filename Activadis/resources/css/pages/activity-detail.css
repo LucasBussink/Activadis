@@ -683,7 +683,9 @@ body {
         }
       }
 
-      textarea {
+      textarea,
+      input[type="text"],
+      input[type="email"] {
         width: 100%;
         padding: 10px 14px;
         border: 1px solid var(--color-border);

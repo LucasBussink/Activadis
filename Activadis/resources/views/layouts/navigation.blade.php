@@ -1,6 +1,6 @@
 <header class="site-nav">
   <div class="site-nav-inner">
-    <a href="{{ route('activities.index') }}" class="brand">
+    <a href="{{ auth()->check() ? route('activities.index') : route('external.index') }}" class="brand">
       <img src="{{ asset('images/covadis-logo.png') }}" alt="Covadis" class="brand-logo" width="40" height="40">
       Activadis
     </a>
@@ -49,6 +49,10 @@
         </div>
       </nav>
     @endauth
+
+    @guest
+      <a href="{{ route('login') }}" class="nav-login"><i class="bi bi-box-arrow-in-right"></i> Inloggen voor medewerkers</a>
+    @endguest
   </div>
 </header>
 

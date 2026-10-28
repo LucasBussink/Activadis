@@ -206,3 +206,19 @@ body {
     }
   }
 }
+
+/* Link rechtsboven voor bezoekers die niet zijn ingelogd (externen) */
+.nav-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.nav-login:hover {
+  color: var(--color-text);
+}

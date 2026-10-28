@@ -60,6 +60,36 @@ class Activity extends Model
         return $this->hasMany(Signups::class);
     }
 
+    public function externalSignups(): HasMany
+    {
+        return $this->hasMany(ExternalSignup::class);
+    }
+
+    /**
+     * Meld een externe (zonder account) aan. Geeft null terug als dat niet (meer) kan:
+     * geen externe activiteit, inschrijving gesloten, vol of dit e-mailadres staat er al op.
+     */
+    public function addExternal(string $name, string $email, bool $withPartner = false, ?string $dietaryNotes = null): ?ExternalSignup
+    {
+        $email = mb_strtolower(trim($email));
+
+        if (! $this->is_external || ! $this->isSignupOpen() || $this->isFull()) {
+            return null;
+        }
+
+        if ($this->externalSignups()->where('email', $email)->exists()) {
+            return null;
+        }
+
+        return $this->externalSignups()->create([
+            'name' => trim($name),
+            'email' => $email,
+            'brings_partner' => $withPartner && $this->allow_partner,
+            'dietary_notes' => $this->cleanDietaryNotes($dietaryNotes),
+            'token' => \Illuminate\Support\Str::random(40),
+        ]);
+    }
+
     /**
      * Schrijf een gebruiker in. Geeft null terug als dat niet (meer) kan.
      */
@@ -168,7 +198,7 @@ class Activity extends Model
 
     public function getSignedUpUserCount(): int
     {
-        return $this->signups()->count();
+        return $this->signups()->count() + $this->externalSignups()->count();
     }
 
     /**
