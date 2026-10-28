@@ -132,11 +132,12 @@ class ExternalActivityController extends Controller
     {
         return Activity::query()
             ->where('status', Activity::STATUS_PUBLISHED)
-            ->where('is_external', true);
+            ->where('is_external', true)
+            ->where('is_deleted', false);
     }
 
     private function abortUnlessVisible(Activity $activity): void
     {
-        abort_unless($activity->status === Activity::STATUS_PUBLISHED && $activity->is_external, 404);
+        abort_unless($activity->status === Activity::STATUS_PUBLISHED && $activity->is_external && ! $activity->is_deleted, 404);
     }
 }

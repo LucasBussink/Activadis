@@ -59,6 +59,15 @@ class ExternalSignupTest extends TestCase
         $this->get(route('external.show', $draft))->assertNotFound();
     }
 
+    public function test_a_cancelled_activity_is_not_visible_for_externals(): void
+    {
+        $activity = $this->externalActivity(['title' => 'Geannuleerde dag', 'is_deleted' => true]);
+
+        $this->get(route('external.index'))->assertDontSee('Geannuleerde dag');
+        $this->get(route('external.show', $activity))->assertNotFound();
+        $this->post(route('external.store', $activity), $this->signupData())->assertNotFound();
+    }
+
     public function test_the_internal_overview_still_needs_a_login(): void
     {
         $this->get(route('activities.index'))->assertRedirect(route('login'));
