@@ -7,6 +7,8 @@ use Database\Factories\ActivityFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class Activity extends Model
 {
@@ -32,6 +34,7 @@ class Activity extends Model
         'allow_partner',
         'is_external',
         'status',
+        'is_deleted',
     ];
 
     protected function casts(): array
@@ -47,6 +50,7 @@ class Activity extends Model
             'max_participants' => 'integer',
             'allow_partner' => 'boolean',
             'is_external' => 'boolean',
+            'is_deleted' => 'boolean',
         ];
     }
 
@@ -86,7 +90,7 @@ class Activity extends Model
             'email' => $email,
             'brings_partner' => $withPartner && $this->allow_partner,
             'dietary_notes' => $this->cleanDietaryNotes($dietaryNotes),
-            'token' => \Illuminate\Support\Str::random(40),
+            'token' => Str::random(40),
         ]);
     }
 
@@ -165,6 +169,7 @@ class Activity extends Model
     public function isSignupOpen(): bool
     {
         return $this->status === self::STATUS_PUBLISHED
+          && ! $this->is_deleted
           && ($this->signup_deadline === null || $this->signup_deadline->isFuture())
           && ! $this->hasEnded();
     }
@@ -177,7 +182,7 @@ class Activity extends Model
     {
         $end = $this->ends_at ?? $this->starts_at;
 
-        return $end !== null && \Illuminate\Support\Carbon::parse($end)->isPast();
+        return $end !== null && Carbon::parse($end)->isPast();
     }
 
     public function isFull(): bool

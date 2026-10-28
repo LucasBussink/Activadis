@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ExternalActivityController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SignupController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/activities');
@@ -23,7 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::resource('activities', ActivityController::class)->only(['create', 'store', 'edit', 'update'])->middleware('admin');
+    Route::resource('activities', ActivityController::class)->only(['create', 'store', 'edit', 'update', 'destroy'])->middleware('admin');
     Route::resource('activities', ActivityController::class)->only(['index', 'show']);
 
     Route::post('/activities/{activity}/signup', [SignupController::class, 'store'])->name('activities.signup');

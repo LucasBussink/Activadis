@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ActivityDeleted;
 use App\Models\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -19,7 +21,7 @@ class ActivityController extends Controller
             ->with('images')
             ->withCount(['signups', 'externalSignups'])
             ->withExists(['signups as is_signed_up' => fn ($query) => $query->where('user_id', $request->user()->id)])
-            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('status', Activity::STATUS_PUBLISHED))
+            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('status', Activity::STATUS_PUBLISHED)->where('is_deleted', false))
             // Verlopen activiteiten (einde of anders begin ligt in het verleden) zijn alleen voor admins zichtbaar.
             // Activiteiten zonder datum blijven staan, die zijn nog niet ingepland.
             ->when(! $request->user()->isAdmin(), fn ($query) => $query->where(
@@ -141,7 +143,7 @@ class ActivityController extends Controller
      */
     public function show(Request $request, Activity $activity): View
     {
-        abort_if($activity->status === Activity::STATUS_DRAFT && ! $request->user()->isAdmin(), 404);
+        abort_if(($activity->status === Activity::STATUS_DRAFT || $activity->is_deleted) && ! $request->user()->isAdmin(), 404);
 
         $activity->load(['images', 'signups.user', 'externalSignups'])->loadCount(['signups', 'externalSignups']);
 
@@ -194,10 +196,24 @@ class ActivityController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Markeer de activiteit als verwijderd (blijft zichtbaar voor beheerders) en mail de ingeschreven deelnemers.
      */
-    public function destroy(string $id)
+    public function destroy(Activity $activity): RedirectResponse
     {
-        //
+        if ($activity->is_deleted) {
+            return back()->with('error', 'Deze activiteit is al verwijderd.');
+        }
+
+        $activity->update(['is_deleted' => true]);
+
+        foreach ($activity->signups()->with('user')->get() as $signup) {
+            Mail::to($signup->user)->send(new ActivityDeleted($activity));
+        }
+
+        foreach ($activity->externalSignups as $externalSignup) {
+            Mail::to($externalSignup->email)->send(new ActivityDeleted($activity, isExternal: true));
+        }
+
+        return redirect()->route('activities.show', $activity)->with('status', 'Activiteit verwijderd. Ingeschreven deelnemers zijn per mail op de hoogte gebracht.');
     }
 }

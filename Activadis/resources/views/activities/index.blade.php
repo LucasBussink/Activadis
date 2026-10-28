@@ -155,7 +155,9 @@
                     </div>
                   @endif
 
-                  @if ($activity->status === 'draft')
+                  @if ($activity->is_deleted)
+                    <span class="status-pill deleted">Verwijderd</span>
+                  @elseif ($activity->status === 'draft')
                     <span class="status-pill">Concept</span>
                   @elseif ($expired)
                     <span class="status-pill expired">Verlopen</span>
