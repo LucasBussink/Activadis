@@ -174,7 +174,7 @@ class SignupPanel extends Component
     private function announce(): void
     {
         $signedUp = $this->activity->isUserSignedUp(auth()->user());
-        $registered = $this->activity->signups()->count();
+        $registered = $this->activity->getSignedUpUserCount();
 
         $this->dispatch(
             'signup-changed',
@@ -188,7 +188,7 @@ class SignupPanel extends Component
         $activity = $this->activity;
 
         $mySignup = $this->mySignup();
-        $registered = $activity->signups()->count();
+        $registered = $activity->getSignedUpUserCount();
         $max = $activity->max_participants;
         $deadline = $activity->signup_deadline?->copy()->locale('nl');
 

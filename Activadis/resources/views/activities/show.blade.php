@@ -45,13 +45,13 @@
       ? 'Nog ' . $deadline->diffForHumans(['parts' => 1, 'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])
       : null;
   $isDraft = $activity->status === \App\Models\Activity::STATUS_DRAFT;
-  $registered = $activity->signups_count;
+  $registered = $activity->signups_count + $activity->external_signups_count;
   $max = $activity->max_participants;
   $isFull = $max && $registered >= $max;
 
   $images = $activity->images;
-  $partnerCount = $activity->signups->where('brings_partner', true)->count();
-  $dietCount = $activity->signups->filter(fn ($signup) => filled($signup->dietary_notes))->count();
+  $partnerCount = $activity->signups->where('brings_partner', true)->count() + $activity->externalSignups->where('brings_partner', true)->count();
+  $dietCount = $activity->signups->filter(fn ($signup) => filled($signup->dietary_notes))->count() + $activity->externalSignups->filter(fn ($signup) => filled($signup->dietary_notes))->count();
 
   if ($activity->personal_contribution === null) {
       $contributionText = '—';
@@ -191,7 +191,7 @@
               @endif
             </h2>
 
-            @if ($activity->signups->isEmpty())
+            @if ($registered === 0)
               <p class="muted">Nog niemand ingeschreven.</p>
             @else
               <ul class="participants">
@@ -206,6 +206,25 @@
                         @endif
                       </p>
                       <p class="email">{{ $signup->user->email }}</p>
+                      @if (filled($signup->dietary_notes))
+                        <p class="diet"><i class="bi bi-cup-hot"></i> {{ $signup->dietary_notes }}</p>
+                      @endif
+                    </div>
+                  </li>
+                @endforeach
+
+                @foreach ($activity->externalSignups as $signup)
+                  <li>
+                    <span class="avatar">{{ mb_strtoupper(mb_substr($signup->name, 0, 1)) }}</span>
+                    <div>
+                      <p class="name">
+                        {{ $signup->name }}
+                        <span class="partner-badge">Extern</span>
+                        @if ($signup->brings_partner)
+                          <span class="partner-badge">+1</span>
+                        @endif
+                      </p>
+                      <p class="email">{{ $signup->email }}</p>
                       @if (filled($signup->dietary_notes))
                         <p class="diet"><i class="bi bi-cup-hot"></i> {{ $signup->dietary_notes }}</p>
                       @endif

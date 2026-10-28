@@ -26,9 +26,14 @@
       </div>
 
       @if (auth()->user()?->isAdmin())
-        <a href="{{ route('activities.create') }}" class="btn-primary">
-          <i class="bi bi-plus-lg"></i> Nieuwe activiteit
-        </a>
+        <div class="header-actions">
+          <button type="button" class="btn-ghost" id="copy-external-link" data-url="{{ route('external.index') }}" title="Kopieer de link om te delen met externen">
+            <i class="bi bi-link-45deg"></i> <span>Link voor externen</span>
+          </button>
+          <a href="{{ route('activities.create') }}" class="btn-primary">
+            <i class="bi bi-plus-lg"></i> Nieuwe activiteit
+          </a>
+        </div>
       @endif
     </header>
 
@@ -112,7 +117,7 @@
 
                 $expired = ($end ?? $start)?->isPast() ?? false;
                 $deadlineClosed = $deadline?->isPast();
-                $registered = $activity->signups_count ?? 0;
+                $registered = ($activity->signups_count ?? 0) + ($activity->external_signups_count ?? 0);
                 $images = $activity->images;
                 $isFull = $activity->max_participants && $registered >= $activity->max_participants;
               @endphp
@@ -234,6 +239,31 @@
       </div>
     @endif
   </div>
+  <script>
+    // Kopieer de publieke link voor externen
+    (() => {
+      const button = document.getElementById('copy-external-link');
+      if (! button) return;
+
+      button.addEventListener('click', async () => {
+        const label = button.querySelector('span');
+        const icon = button.querySelector('i');
+        try {
+          await navigator.clipboard.writeText(button.dataset.url);
+          label.textContent = 'Link gekopieerd';
+          icon.className = 'bi bi-check2';
+        } catch (error) {
+          // Zonder klembordrechten tonen we de link, dan kan hij met de hand gekopieerd worden
+          window.prompt('Kopieer deze link:', button.dataset.url);
+          return;
+        }
+        setTimeout(() => {
+          label.textContent = 'Link voor externen';
+          icon.className = 'bi bi-link-45deg';
+        }, 2500);
+      });
+    })();
+  </script>
   <script>
     // Zoeken, sorteren en verlopen verbergen. Alles gebeurt in de browser, bij elke toetsaanslag.
     (() => {

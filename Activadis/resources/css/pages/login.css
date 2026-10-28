@@ -206,3 +206,19 @@ body .login-page .login-panel .login-panel-inner {
     }
   }
 }
+
+.login-panel-inner .external-link {
+  margin-top: 24px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.login-panel-inner .external-link a {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+
+.login-panel-inner .external-link a:hover {
+  color: var(--color-text);
+}

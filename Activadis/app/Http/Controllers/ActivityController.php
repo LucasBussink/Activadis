@@ -17,7 +17,7 @@ class ActivityController extends Controller
     {
         $activities = Activity::query()
             ->with('images')
-            ->withCount('signups')
+            ->withCount(['signups', 'externalSignups'])
             ->withExists(['signups as is_signed_up' => fn ($query) => $query->where('user_id', $request->user()->id)])
             ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('status', Activity::STATUS_PUBLISHED))
             // Verlopen activiteiten (einde of anders begin ligt in het verleden) zijn alleen voor admins zichtbaar.
@@ -143,7 +143,7 @@ class ActivityController extends Controller
     {
         abort_if($activity->status === Activity::STATUS_DRAFT && ! $request->user()->isAdmin(), 404);
 
-        $activity->load(['images', 'signups.user'])->loadCount('signups');
+        $activity->load(['images', 'signups.user', 'externalSignups'])->loadCount(['signups', 'externalSignups']);
 
         return view('activities.show', [
             'activity' => $activity,
